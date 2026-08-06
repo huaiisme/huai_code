@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻将快捷计分（键盘输入胡数+选牌版）</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { max-width: 700px; margin: 0 auto; padding: 20px; background: #f0f2f5; color: #333; }
+        h1 { text-align: center; margin-bottom: 16px; font-size: 24px; }
+
+        /* 状态提示条 */
+        .status-bar {
+            background: white; padding: 12px 16px; border-radius: 10px; margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06); font-size: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .status-text { font-weight: 500; }
+        .status-text.waiting { color: #666; }
+        .status-text.active { color: #e74c3c; }
+        .status-text.inputting { color: #f39c12; }
+        .hu-shu { color: #27ae60; font-weight: bold; font-size: 18px; min-width: 100px; text-align: right; }
+        .hu-shu.inputting { color: #f39c12; }
+
+        /* 分数面板 */
+        .score-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+        .player-card {
+            background: white; padding: 14px 8px; border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06); text-align: center;
+            transition: all 0.2s; position: relative;
+        }
+        .player-card.active { outline: 3px solid #3498db; transform: translateY(-2px); }
+        .player-key {
+            position: absolute; top: 6px; left: 8px; font-size: 12px;
+            background: #eee; color: #666; padding: 2px 6px; border-radius: 4px;
+        }
+        .player-name { font-size: 16px; font-weight: 600; margin: 10px 0 6px; }
+        .player-score { font-size: 24px; font-weight: bold; color: #e74c3c; }
+        .player-score.positive { color: #27ae60; }
+
+        /* 操作按钮区 */
+        .action-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+        .action-btn {
+            padding: 10px; border: none; border-radius: 8px; cursor: pointer;
+            font-size: 14px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .action-btn.active { background: #3498db; color: white; }
+        .action-btn span { display: block; font-size: 12px; color: #999; margin-top: 2px; }
+        .action-btn.active span { color: #ddd; }
+
+        /* 记录历史 */
+        .history {
+            background: white; border-radius: 10px; padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06); margin-bottom: 16px;
+            max-height: 280px; overflow-y: auto;
+        }
+        .history h3 { margin-bottom: 12px; font-size: 16px; }
+        .record-item {
+            padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+            font-size: 14px; color: #555; display: flex; justify-content: space-between;
+        }
+        .record-item:last-child { border-bottom: none; }
+        .record-time { color: #999; font-size: 12px; }
+        .card-tag {
+            display: inline-block; background: #e8f4fd; color: #2980b9;
+            padding: 1px 6px; border-radius: 4px; font-size: 12px; margin-left: 6px;
+        }
+
+        /* 选牌弹窗 */
+        .card-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100;
+        }
+        .card-modal.show { display: flex; }
+        .card-modal-content {
+            background: white; padding: 20px; border-radius: 12px; width: 92%; max-width: 500px;
+        }
+        .card-modal-title {
+            font-size: 18px; font-weight: bold; margin-bottom: 16px; text-align: center;
+        }
+        .card-group { margin-bottom: 14px; }
+        .card-group-title {
+            font-size: 14px; color: #666; margin-bottom: 8px; padding-left: 4px;
+        }
+        .card-grid {
+            display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px;
+        }
+        .mahjong-card {
+            aspect-ratio: 2 / 3;
+            background: #fff; border: 1px solid #ddd; border-radius: 6px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; font-weight: bold; transition: all 0.15s;
+            font-size: 16px; user-select: none;
+        }
+        .mahjong-card:hover {
+            background: #3498db; color: white; border-color: #3498db; transform: translateY(-2px);
+        }
+        .card-suit { font-size: 12px; margin-top: 2px; }
+        .modal-tip {
+            text-align: center; color: #999; font-size: 13px; margin-top: 12px;
+        }
+
+        /* 快捷键说明 */
+        .shortcut-tip {
+            background: #fffbe6; padding: 12px 16px; border-radius: 8px;
+            font-size: 13px; color: #8a6d3b; line-height: 1.8;
+        }
+        .shortcut-tip code {
+            background: #fff; padding: 2px 6px; border-radius: 4px;
+            border: 1px solid #e8d9a5; font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎲 麻将快捷计分（键盘输入胡数版）</h1>
+
+    <!-- 状态条 -->
+    <div class="status-bar">
+        <div class="status-text waiting" id="statusText">等待操作（按 Z/F/M/A 选择模式）</div>
+        <div class="hu-shu" id="huShuBox">胡数：<span id="huShu">100</span></div>
+    </div>
+
+    <!-- 分数面板 -->
+    <div class="score-board" id="scoreBoard"></div>
+
+    <!-- 操作按钮 -->
+    <div class="action-btns">
+        <button class="action-btn" data-action="zimo">自摸<span>Z键</span></button>
+        <button class="action-btn" data-action="fangpao">放炮<span>F键</span></button>
+        <button class="action-btn" data-action="minggang">明杠<span>M键</span></button>
+        <button class="action-btn" data-action="angang">暗杠<span>A键</span></button>
+    </div>
+
+    <!-- 记录历史 -->
+    <div class="history">
+        <h3>📋 计分记录（Backspace撤销）</h3>
+        <div id="recordList">
+            <div style="color:#999; text-align:center; padding:20px 0;">暂无记录</div>
+        </div>
+    </div>
+
+    <!-- 选牌弹窗 -->
+    <div class="card-modal" id="cardModal">
+        <div class="card-modal-content">
+            <div class="card-modal-title" id="cardModalTitle">请选择胡的牌</div>
+            
+            <div class="card-group">
+                <div class="card-group-title">万</div>
+                <div class="card-grid" id="wanCards"></div>
+            </div>
+            <div class="card-group">
+                <div class="card-group-title">条</div>
+                <div class="card-grid" id="tiaoCards"></div>
+            </div>
+            <div class="card-group">
+                <div class="card-group-title">筒</div>
+                <div class="card-grid" id="tongCards"></div>
+            </div>
+
+            <div class="modal-tip">点击牌面自动入账 · 按 Esc 取消</div>
+        </div>
+    </div>
+
+    <!-- 快捷键说明 -->
+    <div class="shortcut-tip">
+        <strong>操作指南：</strong><br>
+        自摸：<code>Z</code> + 玩家数字 → 点击胡牌 &nbsp;&nbsp; 放炮：<code>F</code> + 放炮者 + 胡牌者 → 点击胡牌<br>
+        明杠：<code>M</code> + 玩家数字 &nbsp;&nbsp; 暗杠：<code>A</code> + 玩家数字（杠牌无需选牌）<br>
+        输胡数：<code>H</code> + 数字 + <code>回车</code>（范围30~400） &nbsp;&nbsp; 微调：<code>↑</code>/<code>↓</code> ±10胡<br>
+        撤销：<code>Backspace</code> &nbsp;&nbsp; 取消：<code>Esc</code>
+    </div>
+
+    <script>
+        // ========== 配置区 ==========
+        const PLAYERS = [
+            { id: 1, name: '怀神', score: 0 },
+            { id: 2, name: '小苏', score: 0 },
+            { id: 3, name: '玩家三', score: 0 },
+            { id: 4, name: '玩家四', score: 0 }
+        ];
+        let huShu = 100; // 默认胡数
+        const MIN_HU = 30;
+        const MAX_HU = 400;
+        const HU_STEP = 10;
+        // ============================
+
+        let records = [];
+        let currentMode = null;
+        let selectedPlayer = null; // 放炮模式下放炮者
+        let pendingRecord = null; // 待选牌的记录数据
+
+        // 胡数输入模式状态
+        let isInputtingHu = false;
+        let inputBuffer = '';
+
+        const statusText = document.getElementById('statusText');
+        const huShuEl = document.getElementById('huShu');
+        const huShuBox = document.getElementById('huShuBox');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const recordList = document.getElementById('recordList');
+        const actionBtns = document.querySelectorAll('.action-btn');
+        const cardModal = document.getElementById('cardModal');
+        const cardModalTitle = document.getElementById('cardModalTitle');
+
+        // ========== 生成麻将牌 ==========
+        function initCards() {
+            const suits = [
+                { id: 'wan', name: '万', container: 'wanCards' },
+                { id: 'tiao', name: '条', container: 'tiaoCards' },
+                { id: 'tong', name: '筒', container: 'tongCards' }
+            ];
+
+            suits.forEach(suit => {
+                const container = document.getElementById(suit.container);
+                for (let i = 1; i <= 9; i++) {
+                    const card = document.createElement('div');
+                    card.className = 'mahjong-card';
+                    card.dataset.card = `${i}${suit.id}`;
+                    card.innerHTML = `<span>${i}</span><span class="card-suit">${suit.name}</span>`;
+                    card.addEventListener('click', () => selectCard(`${i}${suit.name}`));
+                    container.appendChild(card);
+                }
+            });
+        }
+
+        // ========== 渲染函数 ==========
+        function renderScore() {
+            scoreBoard.innerHTML = PLAYERS.map(p => `
+                <div class="player-card ${selectedPlayer === p.id ? 'active' : ''}" data-id="${p.id}">
+                    <div class="player-key">${p.id}</div>
+                    <div class="player-name">${p.name}</div>
+                    <div class="player-score ${p.score >= 0 ? 'positive' : ''}">
+                        ${p.score >= 0 ? '+' : ''}${p.score}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderRecords() {
+            if (records.length === 0) {
+                recordList.innerHTML = '<div style="color:#999; text-align:center; padding:20px 0;">暂无记录</div>';
+                return;
+            }
+            recordList.innerHTML = records.slice().reverse().map(r => `
+                <div class="record-item">
+                    <span>
+                        ${r.desc}
+                        ${r.card ? `<span class="card-tag">${r.card}</span>` : ''}
+                    </span>
+                    <span class="record-time">${r.time}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateStatus(text, type = 'waiting') {
+            statusText.textContent = text;
+            statusText.className = 'status-text ' + type;
+        }
+
+        function updateHuShuDisplay() {
+            if (isInputtingHu) {
+                huShuEl.textContent = inputBuffer || '_';
+                huShuBox.className = 'hu-shu inputting';
+            } else {
+                huShuEl.textContent = huShu;
+                huShuBox.className = 'hu-shu';
+            }
+        }
+
+        function setActiveButton(mode) {
+            actionBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.action === mode);
+            });
+        }
+
+        // ========== 胡数输入模式控制 ==========
+        function startHuInput() {
+            isInputtingHu = true;
+            inputBuffer = '';
+            updateStatus('正在输入胡数，输完按回车确认，Esc取消', 'inputting');
+            updateHuShuDisplay();
+        }
+
+        function confirmHuInput() {
+            if (inputBuffer === '') {
+                cancelHuInput();
+                return;
+            }
+            let num = parseInt(inputBuffer);
+            if (isNaN(num)) {
+                cancelHuInput();
+                return;
+            }
+
+            // 范围限制
+            if (num < MIN_HU) {
+                num = MIN_HU;
+                updateStatus(`胡数不能小于${MIN_HU}，已自动设为 ${MIN_HU} 胡`);
+            } else if (num > MAX_HU) {
+                num = MAX_HU;
+                updateStatus(`胡数不能大于${MAX_HU}，已自动设为 ${MAX_HU} 胡`);
+            } else {
+                updateStatus(`胡数已设为 ${num} 胡`);
+            }
+
+            huShu = num;
+            isInputtingHu = false;
+            inputBuffer = '';
+            updateHuShuDisplay();
+        }
+
+        function cancelHuInput() {
+            isInputtingHu = false;
+            inputBuffer = '';
+            updateStatus('已取消胡数输入', 'waiting');
+            updateHuShuDisplay();
+        }
+
+        function handleHuInputKey(key) {
+            // 数字键
+            if (/^\d$/.test(key)) {
+                if (inputBuffer.length < 3) { // 最多3位
+                    inputBuffer += key;
+                    updateHuShuDisplay();
+                }
+                return true;
+            }
+            // 退格
+            if (key === 'backspace') {
+                inputBuffer = inputBuffer.slice(0, -1);
+                updateHuShuDisplay();
+                return true;
+            }
+            // 回车确认
+            if (key === 'enter') {
+                confirmHuInput();
+                return true;
+            }
+            // Esc取消
+            if (key === 'escape') {
+                cancelHuInput();
+                return true;
+            }
+            return false;
+        }
+
+        // ========== 选牌弹窗控制 ==========
+        function openCardModal(title) {
+            cardModalTitle.textContent = title;
+            cardModal.classList.add('show');
+        }
+
+        function closeCardModal() {
+            cardModal.classList.remove('show');
+            pendingRecord = null;
+        }
+
+        function selectCard(cardName) {
+            if (!pendingRecord) return;
+            pendingRecord.card = cardName;
+            finishRecord(pendingRecord);
+            closeCardModal();
+        }
+
+        // ========== 核心计分逻辑 ==========
+        function finishRecord(recordData) {
+            const { type, player1Id, player2Id, card } = recordData;
+            const p1 = PLAYERS.find(p => p.id === player1Id);
+            const p2 = player2Id ? PLAYERS.find(p => p.id === player2Id) : null;
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            let desc = '';
+            const scoreSnapshot = PLAYERS.map(p => ({ ...p }));
+
+            switch (type) {
+                case 'zimo':
+                    desc = `${p1.name} 自摸 ${huShu}胡`;
+                    p1.score += huShu * 3;
+                    PLAYERS.forEach(p => { if (p.id !== player1Id) p.score -= huShu; });
+                    break;
+                case 'fangpao':
+                    desc = `${p1.name} 放炮给 ${p2.name} ${huShu}胡`;
+                    p1.score -= huShu;
+                    p2.score += huShu;
+                    break;
+                case 'minggang':
+                    desc = `${p1.name} 明杠 ${huShu}胡`;
+                    p1.score += huShu * 3;
+                    PLAYERS.forEach(p => { if (p.id !== player1Id) p.score -= huShu; });
+                    break;
+                case 'angang':
+                    desc = `${p1.name} 暗杠 ${huShu}胡`;
+                    p1.score += huShu * 3;
+                    PLAYERS.forEach(p => { if (p.id !== player1Id) p.score -= huShu; });
+                    break;
+            }
+
+            records.push({
+                type, desc, card, time: timeStr, snapshot: scoreSnapshot
+            });
+
+            renderScore();
+            renderRecords();
+            resetMode();
+            updateStatus(`✅ 已记录：${desc} ${card ? '[' + card + ']' : ''}`);
+        }
+
+        function undoLast() {
+            if (records.length === 0) {
+                updateStatus('⚠️ 没有可撤销的记录');
+                return;
+            }
+            const last = records.pop();
+            last.snapshot.forEach((snap, i) => {
+                PLAYERS[i].score = snap.score;
+            });
+            renderScore();
+            renderRecords();
+            updateStatus(`↩️ 已撤销：${last.desc}`);
+        }
+
+        // ========== 模式控制 ==========
+        function setMode(mode) {
+            currentMode = mode;
+            selectedPlayer = null;
+            pendingRecord = null;
+            setActiveButton(mode);
+            
+            const modeNames = {
+                zimo: '自摸', fangpao: '放炮',
+                minggang: '明杠', angang: '暗杠'
+            };
+            
+            if (mode === 'fangpao') {
+                updateStatus(`已选【放炮】，请按数字键选择放炮玩家`, 'active');
+            } else {
+                updateStatus(`已选【${modeNames[mode]}】，请按数字键选择玩家`, 'active');
+            }
+        }
+
+        function resetMode() {
+            currentMode = null;
+            selectedPlayer = null;
+            pendingRecord = null;
+            setActiveButton(null);
+            renderScore();
+        }
+
+        function selectPlayer(playerId) {
+            if (!currentMode) {
+                updateStatus('请先按 Z/F/M/A 选择操作模式');
+                return;
+            }
+
+            if (currentMode === 'fangpao') {
+                if (!selectedPlayer) {
+                    selectedPlayer = playerId;
+                    const p = PLAYERS.find(p => p.id === playerId);
+                    updateStatus(`放炮者：${p.name}，请选择胡牌玩家`, 'active');
+                    renderScore();
+                } else {
+                    if (playerId === selectedPlayer) {
+                        updateStatus('⚠️ 放炮者和胡牌者不能是同一人');
+                        return;
+                    }
+                    const winner = PLAYERS.find(p => p.id === playerId);
+                    pendingRecord = {
+                        type: 'fangpao',
+                        player1Id: selectedPlayer,
+                        player2Id: playerId
+                    };
+                    openCardModal(`${winner.name} 胡牌，请选择胡的牌`);
+                }
+            } else if (currentMode === 'zimo') {
+                const p = PLAYERS.find(p => p.id === playerId);
+                pendingRecord = {
+                    type: 'zimo',
+                    player1Id: playerId
+                };
+                openCardModal(`${p.name} 自摸胡牌，请选择胡的牌`);
+            } else {
+                finishRecord({
+                    type: currentMode,
+                    player1Id: playerId
+                });
+            }
+        }
+
+        // ========== 全局键盘事件 ==========
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+
+            // 选牌弹窗打开时，只处理Esc
+            if (cardModal.classList.contains('show')) {
+                if (key === 'escape') {
+                    e.preventDefault();
+                    closeCardModal();
+                    resetMode();
+                    updateStatus('已取消选牌');
+                }
+                return;
+            }
+
+            // 胡数输入模式下，只处理输入相关按键
+            if (isInputtingHu) {
+                e.preventDefault();
+                handleHuInputKey(key);
+                return;
+            }
+
+            // 进入胡数输入模式
+            if (key === 'h') {
+                e.preventDefault();
+                startHuInput();
+                return;
+            }
+
+            // 数字键选玩家
+            if (['1','2','3','4'].includes(key)) {
+                e.preventDefault();
+                selectPlayer(parseInt(key));
+                return;
+            }
+
+            // 模式选择
+            if (key === 'z') { e.preventDefault(); setMode('zimo'); return; }
+            if (key === 'f') { e.preventDefault(); setMode('fangpao'); return; }
+            if (key === 'm') { e.preventDefault(); setMode('minggang'); return; }
+            if (key === 'a') { e.preventDefault(); setMode('angang'); return; }
+
+            // 胡数微调（上下箭头）
+            if (key === 'arrowup') {
+                e.preventDefault();
+                if (huShu + HU_STEP <= MAX_HU) {
+                    huShu += HU_STEP;
+                    updateHuShuDisplay();
+                    updateStatus(`胡数调整为 ${huShu} 胡`);
+                } else {
+                    updateStatus(`⚠️ 最大 ${MAX_HU} 胡`);
+                }
+                return;
+            }
+            if (key === 'arrowdown') {
+                e.preventDefault();
+                if (huShu - HU_STEP >= MIN_HU) {
+                    huShu -= HU_STEP;
+                    updateHuShuDisplay();
+                    updateStatus(`胡数调整为 ${huShu} 胡`);
+                } else {
+                    updateStatus(`⚠️ 最小 ${MIN_HU} 胡`);
+                }
+                return;
+            }
+
+            // 撤销
+            if (key === 'backspace') {
+                e.preventDefault();
+                undoLast();
+                return;
+            }
+
+            // 取消当前模式
+            if (key === 'escape') {
+                e.preventDefault();
+                resetMode();
+                updateStatus('已取消，等待操作');
+                return;
+            }
+        });
+
+        // 鼠标点击备用
+        actionBtns.forEach(btn => {
+            btn.addEventListener('click', () => setMode(btn.dataset.action));
+        });
+
+        scoreBoard.addEventListener('click', (e) => {
+            const card = e.target.closest('.player-card');
+            if (card) selectPlayer(parseInt(card.dataset.id));
+        });
+
+        // 初始化
+        initCards();
+        renderScore();
+        renderRecords();
+        updateHuShuDisplay();
+    </script>
+</body>
+</html>
