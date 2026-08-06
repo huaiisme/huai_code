@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>麻将计分本（财神+军师+极速版+键盘快捷键）</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 用户管理区域 -->
+    <div class="user-manage-box">
+        <div class="manage-title">👥 成员管理</div>
+        <div class="manage-row">
+            <input type="text" id="newUserInput" class="manage-input" placeholder="输入新成员昵称">
+            <button class="btn-add" id="btnAddUser">添加</button>
+        </div>
+        <div class="manage-row">
+            <select id="delUserSelect" class="manage-select">
+                <option value="">选择要删除的成员</option>
+            </select>
+            <button class="btn-del" id="btnDelUser">删除</button>
+        </div>
+    </div>
+
+    <!-- 场地选择 -->
+    <div class="site-group">
+        <input type="radio" name="site" id="s1" value="水印城" checked>
+        <label for="s1">水印城</label>
+        <input type="radio" name="site" id="s2" value="揽云锦绣">
+        <label for="s2">揽云锦绣</label>
+    </div>
+
+    <!-- 基础数据统计面板 -->
+    <div class="stats-box">
+        <div class="stats-title">实时统计</div>
+        <div class="stats-header">
+            <div class="stats-name">玩家</div>
+            <div class="stats-item">放炮</div>
+            <div class="stats-item">获胜</div>
+            <div class="stats-item">自摸</div>
+            <div class="stats-item">截胡</div>
+            <div class="stats-item">被截</div>
+            <div class="stats-item">泥鳅</div>
+            <div class="stats-item">3财神</div>
+            <div class="stats-item">4白板</div>
+            <div class="stats-item">天&地胡</div>
+            <div class="stats-item">杠上开花</div>
+            <div class="stats-item">被跟</div>
+            <div class="stats-item">诈胡</div>
+            <div class="stats-item">姥姥</div>
+            <div class="stats-item">牌局</div>
+            <div class="stats-item">30/40胡</div>
+            <div class="stats-item">50-80胡</div>
+            <div class="stats-item">90-200胡</div>
+            <div class="stats-item">210-390胡</div>
+            <div class="stats-item">400胡</div>
+        </div>
+        <div id="stats"></div>
+    </div>
+
+    <!-- 合并：放炮/自摸牌统计 + 牌局参与统计面板 -->
+    <div class="tile-stats-box">
+        <div class="tile-stats-title">🎴 胡牌统计 & 牌局参与</div>
+        <div class="combined-stats-container">
+            <div class="combined-block">
+                <div class="tile-stats-subtitle">💥 全局放炮牌排行</div>
+                <div class="tile-rank-grid" id="globalPaoTileRank"></div>
+                <div class="tile-stats-subtitle">👤 个人放炮明细</div>
+                <div class="person-tile-grid" id="personPaoTileDetail"></div>
+            </div>
+            <div class="combined-block">
+                <div class="tile-stats-subtitle">⭐ 全局自摸牌排行</div>
+                <div class="tile-rank-grid" id="globalZimoTileRank"></div>
+                <div class="tile-stats-subtitle">👤 个人自摸明细</div>
+                <div class="person-tile-grid" id="personZimoTileDetail"></div>
+            </div>
+            <div class="combined-block">
+                <div class="tile-stats-subtitle">📊 牌局参与统计</div>
+                <div class="game-grid" id="gameCountDetail"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 输赢榜展示 -->
+    <div class="settle-box" id="settleBox" style="display:none;">
+        <div class="tile-stats-title">🏆 历史输赢榜 & 财神记录</div>
+        <div id="settleHistory"></div>
+    </div>
+
+    <!-- 玩家选择 (动态渲染) -->
+    <div class="person-group" id="personGroupContainer"></div>
+
+    <!-- 动作按钮 -->
+    <div class="action-group">
+        <button id="btnFastHu" class="btn-hu">胡！(极速版)</button>
+        <button id="btnJieHu">截胡</button>
+        <button id="btnNiqiu">泥鳅</button>
+        <button id="btnDogLuck" style="background:#e67e22;">真的狗运受不了！</button>
+        <button id="btnCaiP" class="btn-caip">菜P操作</button>
+        <button id="btnOB" style="background:#8e44ad;">边缘OB</button>
+        <button id="btnSettle" class="btn-settle">👑 输赢结算（指定财神）</button>
+    </div>
+
+    <!-- 操作日志 -->
+    <div class="log-box" id="log"></div>
+
+    <!-- 功能按钮 -->
+    <div class="func-group">
+        <button class="btn-undo" id="btnUndo">撤销</button>
+        <button class="btn-clear" id="btnClear">清空</button>
+        <button class="btn-export" id="btnExport">导出Excel</button>
+        <button class="btn-title" id="btnTitle">🏆 称号鉴定</button>
+        <button class="btn-military" id="btnMilitary">我来当军师！</button>
+    </div>
+
+    <!-- 通用选人弹窗 -->
+    <div class="modal" id="personModal">
+        <div class="modal-box">
+            <div class="modal-title" id="personModalTitle">选择目标</div>
+            <div class="target-list" id="personList"></div>
+        </div>
+    </div>
+
+    <!-- 菜P操作弹窗 -->
+    <div class="modal" id="caiPModal">
+        <div class="modal-box">
+            <div class="modal-title">请选择菜P操作</div>
+            <div class="caip-grid">
+                <button class="caip-btn" data-action="第一张被跟">第一张被跟</button>
+                <button class="caip-btn" data-action="诈胡">诈胡</button>
+                <button class="caip-btn" data-action="姥姥">姥姥</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 狗运操作弹窗 -->
+    <div class="modal" id="dogLuckModal">
+        <div class="modal-box">
+            <div class="modal-title">请选择狗运操作</div>
+            <div class="caip-grid">
+                <button class="caip-btn" data-action="3财神">3财神</button>
+                <button class="caip-btn" data-action="4白板">4白板</button>
+                <button class="caip-btn" data-action="天&地胡">天&地胡</button>
+                <button class="caip-btn" data-action="杠上开花" style="background:#9b59b6;">杠上开花</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 极速一站式胡牌弹窗 -->
+    <div class="modal" id="fastHuModal">
+        <div class="modal-box">
+            <div class="modal-title" id="fastHuTitle">🎲 极速胡牌</div>
+            <div class="fast-hu-container">
+                <div>
+                    <div class="fast-section-title">1️⃣ 选择胡数</div>
+                    <div class="fast-hu-grid" id="fastHuGrid"></div>
+                </div>
+                <div>
+                    <div class="fast-section-title">2️⃣ 选择类型</div>
+                    <div class="hu-type-grid">
+                        <button class="hu-type-btn btn-pao" id="fastBtnPao" data-type="pao">某人放炮</button>
+                        <button class="hu-type-btn btn-zimo" id="fastBtnZimo" data-type="zimo">自摸</button>
+                    </div>
+                </div>
+                <div id="fastPaoArea" class="pao-person-area">
+                    <div class="fast-section-title">3️⃣ 谁放的炮？</div>
+                    <div class="target-list" id="fastPaoPersonList"></div>
+                </div>
+                <div>
+                    <div class="fast-section-title">4️⃣ 胡的什么牌？</div>
+                    <div id="fastTileContainer"></div>
+                </div>
+                <button class="fast-confirm-btn" id="fastConfirmBtn" disabled>确认记录！</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 输赢结算弹窗 -->
+    <div class="modal" id="settleModal">
+        <div class="modal-box">
+            <div class="modal-title">💰 最终输赢结算</div>
+            <div class="gold-select-group">
+                <label class="gold-select-label">👉 请指定本次付钱的财神爷为第几名</label>
+                <select id="goldRankSelect" class="gold-select">
+                    <option value="1">第1名</option>
+                    <option value="2">第2名</option>
+                    <option value="3">第3名</option>
+                    <option value="4">第4名</option>
+                    <option value="5" selected>第5名（默认输最多）</option>
+                </select>
+            </div>
+            <div id="settleInputs"></div>
+            <div class="settle-btn-group">
+                <button class="btn-cancel-settle" id="btnCancelSettle">取消</button>
+                <button class="btn-save-settle" id="btnSaveSettle">确认结算</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 称号鉴定弹窗 -->
+    <div class="modal" id="titleModal">
+        <div class="modal-box">
+            <div class="modal-title">🏆 封神榜</div>
+            <div class="title-display-box">
+                <div style="font-weight:bold; margin-bottom:8px; color:#b8860b;">📜 称号规则</div>
+                <div id="titleRules"></div>
+            </div>
+            <div style="font-weight:bold; margin-bottom:10px; color:#d92c2c;">🎖️ 获得称号</div>
+            <div id="titleResults"></div>
+            <div class="settle-btn-group">
+                <button class="btn-cancel-settle" id="btnCloseTitle">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 军师选择弹窗 -->
+    <div class="modal" id="militaryModal">
+        <div class="modal-box">
+            <div class="modal-title" id="militaryModalTitle">选择你要指点的人</div>
+            <div class="target-list" id="militaryPersonList"></div>
+        </div>
+    </div>
+
+    <!-- JS按依赖顺序引入 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/modules/userManage.js"></script>
+    <script src="js/modules/fastHu.js"></script>
+    <script src="js/modules/actions.js"></script>
+    <script src="js/modules/settle.js"></script>
+    <script src="js/modules/title.js"></script>
+    <script src="js/modules/military.js"></script>
+    <script src="js/modules/export.js"></script>
+    <script src="js/modules/keyboard.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

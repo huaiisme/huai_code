@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>麻将计分本 v0.3（键盘快捷键版）</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  font-family: "Microsoft YaHei", sans-serif;
+  background: #f9f1f1;
+  padding: 10px;
+}
+
+/* 键盘快捷键提示条 */
+.keyboard-tip {
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.keyboard-status {
+  background: rgba(255,255,255,0.2);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+/* 用户管理区域样式 */
+.user-manage-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+.manage-title {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.manage-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.manage-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.manage-select {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+}
+.btn-add { background: #2d882d; color: #fff; border: none; padding: 0 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+.btn-del { background: #d92c2c; color: #fff; border: none; padding: 0 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+.btn-add:active, .btn-del:active { transform: scale(0.96); }
+.btn-add:disabled, .btn-del:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+/* 通用统计面板样式 - table完美对齐 */
+.stats-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  overflow-x: auto;
+}
+.stats-title {
+  font-weight: bold;
+  color: #d92c2c;
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1100px;
+}
+.stats-table th {
+  font-weight: bold;
+  font-size: 14px;
+  color: #666;
+  border-bottom: 2px solid #eee;
+  padding: 10px 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+.stats-table td {
+  font-size: 15px;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f8f8f8;
+  text-align: center;
+  white-space: nowrap;
+}
+.stats-table .col-name {
+  text-align: left;
+  font-weight: bold;
+  font-size: 16px;
+  min-width: 70px;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+.stats-table .col-game {
+  color: #8e44ad;
+  font-weight: bold;
+}
+.stats-table tr:hover td {
+  background: #fff9f9;
+}
+.stats-table tr:hover .col-name {
+  background: #fff9f9;
+}
+
+/* 合并统计面板容器 */
+.combined-stats-container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.combined-block {
+  flex: 1;
+  min-width: 320px;
+}
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+
+/* 放炮/自摸牌统计面板样式 */
+.tile-stats-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  overflow-x: auto;
+}
+.tile-stats-title {
+  font-weight: bold;
+  color: #d92c2c;
+  text-align: center;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+.tile-stats-subtitle {
+  font-weight: bold;
+  font-size: 14px;
+  color: #666;
+  margin: 10px 0 6px;
+  padding-left: 4px;
+}
+.tile-rank-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.tile-rank-item {
+  padding: 6px 8px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tile-rank-char {
+  font-size: 20px;
+}
+.person-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.person-tile-card {
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 8px;
+}
+.person-tile-name {
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #d92c2c;
+}
+.person-tile-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}
+.empty-tip {
+  text-align: center;
+  color: #999;
+  padding: 10px 0;
+  font-size: 14px;
+}
+
+/* 输赢榜统计面板样式 */
+.settle-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+.settle-history-item {
+  border-bottom: 1px solid #eee;
+  padding: 8px 0;
+  margin-bottom: 10px;
+}
+.settle-history-time {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 6px;
+}
+.settle-rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  margin: 3px 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+/* 财神爷专属高亮样式 */
+.rank-gold {
+  background: linear-gradient(90deg, #ffd700, #fff3cd);
+  border: 2px solid #ffaa00;
+  font-weight: bold;
+  color: #b8860b;
+}
+.rank-1 {
+  color: #2d882d;
+  font-weight: bold;
+}
+.rank-last {
+  color: #d92c2c;
+  font-weight: bold;
+}
+.settle-result-text {
+  font-weight: bold;
+  color: #d92c2c;
+  margin-top: 8px;
+  font-size: 15px;
+  text-align: center;
+  background: #fff3cd;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+/* 场地选择样式 */
+.site-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.site-group input {
+  display: none;
+}
+.site-group label {
+  flex: 1;
+  min-width: 80px;
+  padding: 10px 6px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  border: 2px solid #ddd;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+/* 水印城：蓝色 */
+.site-group input[value="水印城"]:checked + label {
+  background: #366895;
+  color: #fff;
+  border-color: #2a5277;
+  box-shadow: 0 0 8px rgba(54,104,149,0.4);
+}
+/* 揽云锦绣：绿色 */
+.site-group input[value="揽云锦绣"]:checked + label {
+  background: #2d882d;
+  color: #fff;
+  border-color: #236b23;
+  box-shadow: 0 0 8px rgba(45,136,45,0.4);
+}
+
+/* 人员选择样式 */
+.person-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.person-group input {
+  display: none;
+}
+.person-group label {
+  flex: 1;
+  min-width: 50px;
+  padding: 8px 6px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  border: 2px solid #ddd;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.person-group input:checked + label {
+  background: #d92c2c;
+  color: #ffdd66;
+  border-color: #ffaa00;
+  box-shadow: 0 0 8px rgba(217,44,44,0.4);
+}
+
+/* 动作按钮样式 */
+.action-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.action-group button {
+  padding: 10px 4px;
+  background: #e67e22;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.1s;
+}
+.action-group button:active {
+  background: #cc6c1c;
+  transform: scale(0.96);
+}
+/* 输赢结算按钮特殊样式 */
+.btn-settle { background: #9b59b6; grid-column: span 4; }
+/* 胡按钮样式 */
+.btn-hu { background: #ff4757; color: #fff; font-size: 16px; padding: 12px 4px; }
+/* 菜P操作按钮样式 */
+.btn-caip { background: #1abc9c; }
+
+/* 日志 */
+.log-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  height: 180px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 功能按钮 */
+.func-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.func-group button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+  min-width: 80px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.func-group button:active {
+  transform: scale(0.96);
+}
+.btn-undo { background: #366895; }
+.btn-clear { background: #e67e22; }
+.btn-export { background: #2d882d; }
+/* 新增：称号鉴定按钮样式 */
+.btn-title { background: #ff6b81; } 
+/* 新增：军师按钮样式 */
+.btn-military { background: #6c757d; }
+.btn-military.active { background: #ff4757; box-shadow: 0 0 10px rgba(255, 71, 87, 0.6); }
+
+/* 通用弹窗 */
+.modal {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 999;
+}
+.modal.show { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: popIn 0.2s ease;
+}
+@keyframes popIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.modal-title {
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+/* 菜P操作弹窗 */
+.caip-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+}
+.caip-btn {
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 18px;
+  background: #1abc9c;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.caip-btn:active { background: #16a085; transform: scale(0.98); }
+
+/* 胡数选择弹窗 */
+.hu-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.hu-btn {
+  padding: 12px;
+  background: #ff4757;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.hu-btn.selected {
+    background: #2d882d;
+    box-shadow: 0 0 10px rgba(45,136,45,0.6);
+    transform: scale(1.05);
+}
+
+/* 胡类型选择弹窗（放炮/自摸） */
+.hu-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 10px;
+}
+.hu-type-btn {
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  opacity: 0.5;
+  border: 2px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.hu-type-btn:active { transform: scale(0.98); }
+.hu-type-btn.active {
+  opacity: 1;
+  border-color: #ff4757;
+  background: #fff5f5;
+  color: #ff4757;
+}
+.btn-pao.active { border-color: #e74c3c; color: #e74c3c; background: #fff0f0; }
+.btn-zimo.active { border-color: #f1c40f; color: #b8860b; background: #fffef0; }
+
+/* 输赢结算弹窗样式 */
+.gold-select-group {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #fff3cd;
+  border-radius: 8px;
+  border: 1px solid #ffc107;
+}
+.gold-select-label {
+  font-weight: bold;
+  color: #b8860b;
+  margin-bottom: 8px;
+  display: block;
+  text-align: center;
+}
+.gold-select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  background: #fff;
+}
+.settle-input-group {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.settle-input-label {
+  width: 60px;
+  font-weight: bold;
+}
+.settle-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: right;
+}
+.settle-btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+.settle-btn-group button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.settle-btn-group button:active { transform: scale(0.98); }
+.btn-save-settle { background: #2d882d; color: #fff; }
+.btn-cancel-settle { background: #ddd; color: #333; }
+
+/* 选牌弹窗 */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 8px;
+  margin-bottom: 15px;
+}
+.tile-btn {
+  padding: 8px;
+  font-size: 32px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.tile-btn:active, .tile-btn.selected {
+  background: #ff4757;
+  border-color: #d92c2c;
+  color: #fff;
+  transform: scale(1.1);
+}
+.tile-type-title {
+  font-weight: bold;
+  margin: 10px 0 5px;
+  color: #666;
+}
+
+/* 选人弹窗 */
+.target-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.target-list button {
+  padding: 14px;
+  background: #ddd;
+  color: #333;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.target-list button:active { transform: scale(0.98); }
+.target-list button.selected {
+    background: #e74c3c;
+    color: #fff;
+    border-color: #c0392b;
+}
+
+/* 称号鉴定弹窗样式 */
+.title-display-box {
+  background: #fffef0;
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+.title-rule-item {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+  padding-left: 10px;
+}
+.title-result-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #ddd;
+}
+.title-name {
+  font-weight: bold;
+  color: #d92c2c;
+}
+.title-owner {
+  font-weight: bold;
+  color: #333;
+}
+.title-count {
+  color: #666;
+  font-size: 14px;
+}
+
+/* === 极速胡牌弹窗专用样式 === */
+.fast-hu-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.fast-section-title {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+    border-left: 4px solid #d92c2c;
+    padding-left: 8px;
+}
+.fast-hu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 8px;
+}
+.fast-tile-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 6px;
+}
+.fast-tile-btn {
+    padding: 6px;
+    font-size: 28px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+.fast-tile-btn:active { transform: scale(0.95); }
+.fast-tile-btn.selected {
+    background: #ff4757;
+    border-color: #d92c2c;
+    color: #fff;
+    transform: scale(1.1);
+}
+.fast-confirm-btn {
+    width: 100%;
+    padding: 15px;
+    background: #2d882d;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.fast-confirm-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+.fast-confirm-btn:active:not(:disabled) {
+    background: #236b23;
+    transform: scale(0.98);
+}
+.pao-person-area {
+    display: none; /* 默认隐藏，放炮时显示 */
+}
+.pao-person-area.show {
+    display: block;
+}
+</style>
+</head>
+<body>
+
+<!-- 用户管理区域 -->
+<div class="user-manage-box">
+  <div class="manage-title">👥 成员管理</div>
+  <div class="manage-row">
+    <input type="text" id="newUserInput" class="manage-input" placeholder="输入新成员昵称">
+    <button class="btn-add" id="btnAddUser" onclick="addUser()">添加</button>
+  </div>
+  <div class="manage-row">
+    <select id="delUserSelect" class="manage-select">
+      <option value="">选择要删除的成员</option>
+    </select>
+    <button class="btn-del" id="btnDelUser" onclick="deleteUser()">删除</button>
+  </div>
+</div>
+
+<!-- 场地选择 -->
+<div class="site-group">
+  <input type="radio" name="site" id="s1" value="水印城" checked>
+  <label for="s1">水印城</label>
+  <input type="radio" name="site" id="s2" value="揽云锦绣">
+  <label for="s2">揽云锦绣</label>
+</div>
+
+<!-- 键盘快捷键提示 -->
+<div class="keyboard-tip">
+  <span>⌨️ 快捷键：Z自摸 | F放炮 | J截胡 | G狗运 | C菜P | H输胡数 | 1-5选人 | ↑↓调胡数 | Backspace撤销 | Esc取消</span>
+  <span class="keyboard-status" id="keyboardStatus">待命</span>
+</div>
+
+<!-- 基础数据统计面板 - table布局完美对齐 -->
+<div class="stats-box">
+  <div class="stats-title">实时统计</div>
+  <table class="stats-table">
+    <thead>
+      <tr>
+        <th class="col-name">玩家</th>
+        <th>放炮</th>
+        <th>放炮胡数</th>
+        <th>获胜</th>
+        <th>自摸</th>
+        <th>截胡</th>
+        <th>被截</th>
+        <th>3财神</th>
+        <th>4白板</th>
+        <th>天&地胡</th>
+        <th>杠上开花</th>
+        <th>被跟</th>
+        <th>诈胡</th>
+        <th>姥姥</th>
+        <th>30/40胡</th>
+        <th>50-80胡</th>
+        <th>90-200胡</th>
+        <th>210-390胡</th>
+        <th>400胡</th>
+      </tr>
+    </thead>
+    <tbody id="stats"></tbody>
+  </table>
+</div>
+
+<!-- 合并：放炮/自摸牌统计 + 牌局参与统计面板 -->
+<div class="tile-stats-box">
+  <div class="tile-stats-title">🎴 胡牌统计 & 牌局参与</div>
+  <div class="combined-stats-container">
+    <div class="combined-block">
+      <div class="tile-stats-subtitle">💥 全局放炮牌排行</div>
+      <div class="tile-rank-grid" id="globalPaoTileRank"></div>
+      <div class="tile-stats-subtitle">👤 个人放炮明细</div>
+      <div class="person-tile-grid" id="personPaoTileDetail"></div>
+    </div>
+    <div class="combined-block">
+      <div class="tile-stats-subtitle">⭐ 全局自摸牌排行</div>
+      <div class="tile-rank-grid" id="globalZimoTileRank"></div>
+      <div class="tile-stats-subtitle">👤 个人自摸明细</div>
+      <div class="person-tile-grid" id="personZimoTileDetail"></div>
+    </div>
+    <div class="combined-block">
+      <div class="tile-stats-subtitle">📊 牌局参与统计</div>
+      <div class="game-grid" id="gameCountDetail"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 输赢榜展示 -->
+<div class="settle-box" id="settleBox" style="display:none;">
+  <div class="tile-stats-title">🏆 历史输赢榜 & 财神记录</div>
+  <div id="settleHistory"></div>
+</div>
+
+<!-- 玩家选择 (动态渲染) -->
+<div class="person-group" id="personGroupContainer"></div>
+
+<!-- 动作按钮 -->
+<div class="action-group">
+  <button onclick="openFastHuModal()" class="btn-hu">胡！(Z/F/J)</button>
+  <button onclick="openDogLuckModal()" style="background:#e67e22;">狗运(G)</button>
+  <button onclick="openCaiPModal()" class="btn-caip">菜P(C)</button>
+  <button onclick="openSettleModal()" class="btn-settle">👑 输赢结算（指定财神）</button>
+</div>
+
+<!-- 操作日志 -->
+<div class="log-box" id="log"></div>
+
+<!-- 功能按钮 -->
+<div class="func-group">
+  <button class="btn-undo" onclick="undo()">撤销</button>
+  <button class="btn-clear" onclick="clearAll()">清空</button>
+  <button class="btn-export" onclick="exportExcel()">导出Excel</button>
+  <button class="btn-title" onclick="openTitleModal()">🏆 称号鉴定</button>
+  <button class="btn-military" id="btnMilitary" onclick="toggleMilitary()">我来当军师！</button>
+</div>
+
+<!-- 菜P操作弹窗 -->
+<div class="modal" id="caiPModal">
+  <div class="modal-box">
+    <div class="modal-title">请选择菜P操作</div>
+    <div class="caip-grid">
+      <button class="caip-btn" onclick="actCaiP('第一张被跟')">第一张被跟</button>
+      <button class="caip-btn" onclick="actCaiP('诈胡')">诈胡</button>
+      <button class="caip-btn" onclick="actCaiP('姥姥')">姥姥</button>
+    </div>
+  </div>
+</div>
+
+<!-- 狗运操作弹窗 (新增：杠上开花) -->
+<div class="modal" id="dogLuckModal">
+  <div class="modal-box">
+    <div class="modal-title">请选择狗运操作</div>
+    <div class="caip-grid">
+      <button class="caip-btn" onclick="actDogLuck('3财神')">3财神</button>
+      <button class="caip-btn" onclick="actDogLuck('4白板')">4白板</button>
+      <button class="caip-btn" onclick="actDogLuck('天&地胡')">天&地胡</button>
+      <button class="caip-btn" onclick="actDogLuck('杠上开花')" style="background:#9b59b6;">杠上开花</button>
+    </div>
+  </div>
+</div>
+
+<!-- 极速一站式胡牌弹窗 (NEW) -->
+<div class="modal" id="fastHuModal">
+  <div class="modal-box">
+    <div class="modal-title" id="fastHuTitle">🎲 极速胡牌</div>
+    
+    <div class="fast-hu-container">
+      <!-- 1. 胡数选择 -->
+      <div>
+        <div class="fast-section-title">1️⃣ 选择胡数</div>
+        <div class="fast-hu-grid" id="fastHuGrid"></div>
+      </div>
+
+      <!-- 2. 类型选择 -->
+      <div>
+        <div class="fast-section-title">2️⃣ 选择类型</div>
+        <div class="hu-type-grid">
+          <button class="hu-type-btn btn-pao" id="fastBtnPao" onclick="setFastType('pao')">某人放炮</button>
+          <button class="hu-type-btn btn-zimo" id="fastBtnZimo" onclick="setFastType('zimo')">自摸</button>
+        </div>
+      </div>
+
+      <!-- 3. 放炮者选择 (仅放炮时显示) -->
+      <div id="fastPaoArea" class="pao-person-area">
+        <div class="fast-section-title">3️⃣ 谁放的炮？</div>
+        <div class="target-list" id="fastPaoPersonList"></div>
+      </div>
+
+      <!-- 4. 选牌 -->
+      <div>
+        <div class="fast-section-title">4️⃣ 胡的什么牌？</div>
+        <div id="fastTileContainer">
+            <!-- 牌会通过JS渲染在这里 -->
+        </div>
+      </div>
+
+      <button class="fast-confirm-btn" id="fastConfirmBtn" onclick="confirmFastHu()" disabled>确认记录！(回车)</button>
+    </div>
+  </div>
+</div>
+
+<!-- 输赢结算弹窗 -->
+<div class="modal" id="settleModal">
+  <div class="modal-box">
+    <div class="modal-title">💰 最终输赢结算</div>
+    <div class="gold-select-group">
+      <label class="gold-select-label">👉 请指定本次付钱的财神爷为第几名</label>
+      <select id="goldRankSelect" class="gold-select">
+        <option value="1">第1名</option><option value="2">第2名</option>
+        <option value="3">第3名</option><option value="4">第4名</option>
+        <option value="5" selected>第5名（默认输最多）</option>
+      </select>
+    </div>
+    <div id="settleInputs"></div>
+    <div class="settle-btn-group">
+      <button class="btn-cancel-settle" onclick="closeModal(settleModal)">取消</button>
+      <button class="btn-save-settle" onclick="saveSettle()">确认结算</button>
+    </div>
+  </div>
+</div>
+
+<!-- 称号鉴定弹窗 -->
+<div class="modal" id="titleModal">
+  <div class="modal-box">
+    <div class="modal-title">🏆 封神榜</div>
+    <div class="title-display-box">
+      <div style="font-weight:bold; margin-bottom:8px; color:#b8860b;">📜 称号规则</div>
+      <div id="titleRules"></div>
+    </div>
+    <div style="font-weight:bold; margin-bottom:10px; color:#d92c2c;">🎖️ 获得称号</div>
+    <div id="titleResults"></div>
+    <div class="settle-btn-group">
+      <button class="btn-cancel-settle" onclick="closeModal(titleModal)">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 军师选择弹窗 -->
+<div class="modal" id="militaryModal">
+  <div class="modal-box">
+    <div class="modal-title" id="militaryModalTitle">选择你要指点的人</div>
+    <div class="target-list" id="militaryPersonList"></div>
+  </div>
+</div>
+
+<!-- 通用选人弹窗（修复v0.2缺失的致命Bug！截胡/OB功能依赖此元素） -->
+<div class="modal" id="personModal">
+  <div class="modal-box">
+    <div class="modal-title" id="personModalTitle">选择目标</div>
+    <div class="target-list" id="personList"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+// 全局配置
+let users = ["怀神", "苏少", "严总", "王总", "P神"];
+let records = [];
+let settleRecords = [];
+
+// 极速胡牌状态机
+let fastState = {
+    huUser: "",
+    huScore: 0,
+    type: "", // "pao" or "zimo"
+    paoUser: "",
+    tile: { char: "", name: "" }
+};
+
+// 键盘输入胡数临时变量
+let keyboardHuInput = "";
+let isHuInputMode = false;
+
+// 军师系统全局变量
+let militaryActive = false;     // 军师状态是否开启
+let currentMilitaryUser = "";   // 当前是谁在当军师
+let currentMilitaryTarget = ""; // 军师指点的目标（如果此人放炮，锅分一半给军师）
+
+// 麻将牌配置
+const tileConfig = {
+  wan: [{ char: "🀇", name: "一万" },{ char: "🀈", name: "二万" },{ char: "🀉", name: "三万" },
+        { char: "🀊", name: "四万" },{ char: "🀋", name: "五万" },{ char: "🀌", name: "六万" },
+        { char: "🀍", name: "七万" },{ char: "🀎", name: "八万" },{ char: "🀏", name: "九万" }],
+  tiao: [{ char: "🀐", name: "一条" },{ char: "🀑", name: "二条" },{ char: "🀒", name: "三条" },
+         { char: "🀓", name: "四条" },{ char: "🀔", name: "五条" },{ char: "🀕", name: "六条" },
+         { char: "🀖", name: "七条" },{ char: "🀗", name: "八条" },{ char: "🀘", name: "九条" }],
+  tong: [{ char: "🀙", name: "一筒" },{ char: "🀚", name: "二筒" },{ char: "🀛", name: "三筒" },
+         { char: "🀜", name: "四筒" },{ char: "🀝", name: "五筒" },{ char: "🀞", name: "六筒" },
+         { char: "🀟", name: "七筒" },{ char: "🀠", name: "八筒" },{ char: "🀡", name: "九筒" }],
+  zi: [{ char: "🀀", name: "东" },{ char: "🀁", name: "南" },{ char: "🀂", name: "西" },
+       { char: "🀃", name: "北" },{ char: "🀄", name: "中" },{ char: "🀅", name: "发" },{ char: "🀆", name: "白" }]
+};
+
+// 所有麻将牌平铺数组，用于键盘快速选牌
+const allTiles = [
+  ...tileConfig.wan, ...tileConfig.tiao, ...tileConfig.tong, ...tileConfig.zi
+];
+
+// DOM元素
+const caiPModal = document.getElementById("caiPModal");
+const dogLuckModal = document.getElementById("dogLuckModal");
+const titleModal = document.getElementById("titleModal");
+const militaryModal = document.getElementById("militaryModal");
+const fastHuModal = document.getElementById("fastHuModal");
+const personModal = document.getElementById("personModal");
+const settleModal = document.getElementById("settleModal");
+const settleInputs = document.getElementById("settleInputs");
+const settleHistory = document.getElementById("settleHistory");
+const settleBox = document.getElementById("settleBox");
+const goldRankSelect = document.getElementById("goldRankSelect");
+const personGroupContainer = document.getElementById("personGroupContainer");
+const newUserInput = document.getElementById("newUserInput");
+const delUserSelect = document.getElementById("delUserSelect");
+const btnMilitary = document.getElementById("btnMilitary");
+const log = document.getElementById("log");
+const stats = document.getElementById("stats");
+const keyboardStatus = document.getElementById("keyboardStatus");
+
+// 更新键盘状态提示
+function updateKeyboardStatus(text) {
+  keyboardStatus.innerText = text;
+  setTimeout(() => {
+    if (!isHuInputMode) keyboardStatus.innerText = "待命";
+  }, 2000);
+}
+
+// 时间格式化
+function now() {
+  const d = new Date();
+  const pad = n=>n.toString().padStart(2,"0");
+  return `${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function getDateStr() {
+  const d = new Date();
+  const pad = n=>n.toString().padStart(2,"0");
+  return `${String(d.getFullYear()).slice(2)}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+}
+
+// 选中获取
+function getSelectedSite() {
+  const r = document.querySelector('input[name="site"]:checked');
+  if (!r) { alert("请先选择场地！"); return null; }
+  return r.value;
+}
+function getSelectedUser() {
+  const r = document.querySelector('input[name="user"]:checked');
+  if (!r) { alert("请先选择操作人！"); return null; }
+  return r.value;
+}
+// 编程式选择用户（键盘1-5用）
+function selectUserByIndex(index) {
+  const radios = document.querySelectorAll('input[name="user"]');
+  if (radios[index]) {
+    radios[index].checked = true;
+    updateKeyboardStatus(`已选中：${users[index]}`);
+  }
+}
+
+// 统计计算 (增加杠上开花 gs)
+function calcBaseStats() {
+  let st = {};
+  // 初始化：增加放炮胡数统计，删除泥鳅和牌局
+  users.forEach(u=>st[u]={
+    p:0,paoScore:0,w:0,z:0,j:0,bj:0,c3:0,b4:0,tdh:0,gs:0,bg:0,zh:0,ll:0,militaryP:0,
+    hu30_40:0, hu50_80:0, hu90_200:0, hu210_390:0, hu400:0
+  });
+  
+  records.forEach(r=>{
+    if (r.t === "pao" && st[r.from]) { 
+      // 检查是否有军师介入
+      if(r.military && r.military.active) {
+        st[r.from].p += 0.5; // 放炮者计 0.5
+        st[r.from].paoScore += r.huScore; // 放炮胡数累加
+        if(st[r.military.user]) {
+          st[r.military.user].p += 0.5; // 军师计 0.5
+          st[r.military.user].paoScore += r.huScore; // 军师分锅也累加胡数
+          st[r.military.user].militaryP += 0.5; // 军师专属统计
+        }
+      } else {
+        st[r.from].p++; // 正常放炮计 1
+        st[r.from].paoScore += r.huScore; // 放炮胡数累加
+      }
+      if(st[r.to]) st[r.to].w++; 
+    }
+    if (r.t === "zimo" && st[r.from]) { 
+        st[r.from].w++; 
+        st[r.from].z++; // 新增自摸计数
+    }
+    if (r.t === "jie" && st[r.from]) { st[r.from].j++; if(st[r.to]) st[r.to].bj++; }
+    if (r.t === "ob") { users.forEach(u => { if (!r.obUsers.includes(u) && st[u]) st[u].game++; }); }
+    if (r.t === "one" && st[r.f]) {
+      const a = r.a;
+      if(a==="泥鳅")st[r.f].n++;
+      if(a==="3财神")st[r.f].c3++;
+      if(a==="4白板")st[r.f].b4++;
+      if(a==="天&地胡")st[r.f].tdh++;
+      if(a==="杠上开花")st[r.f].gs++; // 新增杠上开花
+      if(a==="第一张被跟")st[r.f].bg++;
+      if(a==="诈胡")st[r.f].zh++;
+      if(a==="姥姥")st[r.f].ll++;
+    }
+
+    // 胡数分段统计
+    if((r.t === "pao" || r.t === "zimo") && r.huScore) {
+      const hu = r.huScore;
+      const user = r.t === "pao" ? r.to : r.from;
+      if(!st[user]) return;
+      
+      if(hu === 30 || hu === 40) st[user].hu30_40++;
+      else if(hu >= 50 && hu <= 80) st[user].hu50_80++;
+      else if(hu >= 90 && hu <= 200) st[user].hu90_200++;
+      else if(hu >= 210 && hu <= 390) st[user].hu210_390++;
+      else if(hu === 400) st[user].hu400++;
+    }
+  });
+  return st;
+}
+
+function calcTileStats(type) {
+  let globalCount = {}, personCount = {};
+  users.forEach(u => personCount[u] = {});
+  records.filter(r => r.t === type).forEach(r => {
+    const k = `${r.tileName}${r.tile}`;
+    globalCount[k]=(globalCount[k]||0)+1;
+    personCount[r.from][k]=(personCount[r.from][k]||0)+1;
+  });
+  return {
+    sortedGlobal: Object.entries(globalCount).sort((a,b)=>b[1]-a[1]).map(i=>({tile:i[0],count:i[1]})),
+    personCount
+  };
+}
+
+// 界面刷新
+function refresh() {
+  const base=calcBaseStats(), pao=calcTileStats("pao"), zimo=calcTileStats("zimo");
+  // 统计面板
+  stats.innerHTML = users.map(u=>{
+    const d=base[u]||{p:0,w:0,z:0,j:0,bj:0,n:0,c3:0,b4:0,tdh:0,gs:0,bg:0,zh:0,ll:0,game:0,militaryP:0,hu30_40:0,hu50_80:0,hu90_200:0,hu210_390:0,hu400:0};
+    const displayP = Number.isInteger(d.p)? d.p : d.p.toFixed(1);
+    return `<tr>
+      <td class="col-name">${u}</td>
+      <td>${displayP}</td>
+      <td style="color:#e67e22;font-weight:bold">${d.paoScore}</td>
+      <td>${d.w}</td>
+      <td>${d.z}</td>
+      <td>${d.j}</td>
+      <td>${d.bj}</td>
+      <td>${d.c3}</td>
+      <td>${d.b4}</td>
+      <td>${d.tdh}</td>
+      <td>${d.gs}</td>
+      <td>${d.bg}</td>
+      <td>${d.zh}</td>
+      <td>${d.ll}</td>
+      <td>${d.hu30_40}</td>
+      <td>${d.hu50_80}</td>
+      <td>${d.hu90_200}</td>
+      <td>${d.hu210_390}</td>
+      <td>${d.hu400}</td>
+    </tr>`;
+  }).join("");
+
+  // 牌统计渲染
+  const r=(s,g,p)=>{
+    document.getElementById(g).innerHTML=s.sortedGlobal.length?
+      s.sortedGlobal.map(i=>`<div class="tile-rank-item"><span class="tile-rank-char">${i.tile.slice(-2)}</span><span>${i.tile.slice(0,-2)}×${i.count}</span></div>`).join("")
+      :'<div class="empty-tip">暂无记录</div>';
+    document.getElementById(p).innerHTML=users.map(u=>{
+      const t=Object.entries(s.personCount[u]||{}).sort((a,b)=>b[1]-a[1]);
+      return `<div class="person-tile-card"><div class="person-tile-name">${u}</div>
+      <div class="person-tile-list">${t.length?t.map(i=>`<span>${i[0].slice(-2)}×${i[1]}</span>`).join(""):'<span style="color:#999">暂无</span>'}</div></div>`;
+    }).join("");
+  };
+  r(pao,"globalPaoTileRank","personPaoTileDetail");
+  r(zimo,"globalZimoTileRank","personZimoTileDetail");
+
+  // 牌局统计
+  document.getElementById("gameCountDetail").innerHTML=users.map(u=>
+    `<div class="person-tile-card"><div class="person-tile-name">${u}</div>
+    <div style="font-size:24px;color:#8e44ad;text-align:center">${(base[u]||{}).game||0}局</div></div>`
+  ).join("");
+
+  log.innerText = records.map(r=>`[${r.time}] ${r.desc}`).join("\n");
+  refreshSettleUI();
+  saveToLocal();
+}
+
+// 弹窗控制
+function openModal(m){m.classList.add("show");}
+function closeModal(m){
+  m.classList.remove("show");
+  // 关闭胡牌弹窗时重置键盘胡数输入
+  if(m === fastHuModal) {
+    isHuInputMode = false;
+    keyboardHuInput = "";
+  }
+}
+
+// 点击遮罩层关闭弹窗
+document.querySelectorAll(".modal").forEach(modal => {
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeModal(modal);
+    }
+  });
+});
+
+// 菜P操作逻辑
+function openCaiPModal() {
+  if (!getSelectedSite() || !getSelectedUser()) return;
+  openModal(caiPModal);
+}
+
+function actCaiP(actionName) {
+  closeModal(caiPModal);
+  actOne(actionName);
+}
+
+// 狗运操作逻辑
+function openDogLuckModal() {
+  if (!getSelectedSite() || !getSelectedUser()) return;
+  openModal(dogLuckModal);
+}
+
+function actDogLuck(actionName) {
+  closeModal(dogLuckModal);
+  actOne(actionName);
+}
+
+// 截胡 / OB / 单动作
+function prepareJieHu(){
+  const u=getSelectedUser();if(!u||!getSelectedSite())return;
+  const personModalTitle = document.getElementById("personModalTitle");
+  const personList = document.getElementById("personList");
+  personModalTitle.innerText="截胡谁？";personList.innerHTML="";
+  users.filter(x=>x!==u).forEach(t=>{
+    const b=document.createElement("button");b.innerText=t;
+    b.onclick=()=>{closeModal(personModal);records.push({t:"jie",from:u,to:t,desc:`${u}→截胡→${t}`,time:now()});refresh();};
+    personList.appendChild(b);
+  });openModal(personModal);
+}
+function prepareOB(){
+  if(!getSelectedSite())return;
+  const personModalTitle = document.getElementById("personModalTitle");
+  const personList = document.getElementById("personList");
+  personModalTitle.innerText="谁在边缘OB？";personList.innerHTML="";
+  users.forEach(t=>{const b=document.createElement("button");b.innerText=t;b.onclick=()=>{closeModal(personModal);
+  records.push({t:"ob",obUsers:[t],desc:`${t}OB，${users.filter(x=>x!==t).join("、")}+1局`,time:now()});refresh();};
+  personList.appendChild(b);});openModal(personModal);
+}
+function actOne(a){const u=getSelectedUser();if(!u||!getSelectedSite())return;
+  records.push({t:"one",f:u,a:a,desc:`${u}｜${a}`,time:now()});refresh();}
+
+// 用户管理
+function addUser(){const n=newUserInput.value.trim();
+  if(!n||users.includes(n)){alert("无效或已存在");return;}users.push(n);newUserInput.value="";refreshAllUI();saveToLocal();}
+function deleteUser(){const n=delUserSelect.value;
+  if(!n||records.some(r=>r.from===n||r.to===n||r.f===n||r.obUsers?.includes(n))||settleRecords.some(s=>s.ranked.some(i=>i.user===n)))
+  {alert("无法删除，有记录");return;}if(confirm(`删除${n}？`)){users=users.filter(x=>x!==n);delUserSelect.value="";refreshAllUI();saveToLocal();}}
+
+// 渲染人员
+function renderPersonGroup(){
+  personGroupContainer.innerHTML="";
+  users.forEach((u,i)=>{
+    const id=`u_${i}`;
+    const input=document.createElement("input");
+    input.type="radio";input.name="user";input.id=id;input.value=u;if(i===0)input.checked=true;
+    const label=document.createElement("label");label.htmlFor=id;label.innerText=`${i+1}.${u}`;
+    personGroupContainer.appendChild(input);personGroupContainer.appendChild(label);
+  });
+}
+function renderDelSelect(){
+  delUserSelect.innerHTML='<option value="">选择删除</option>';
+  users.forEach(u=>{const o=document.createElement("option");o.value=u;o.innerText=u;delUserSelect.appendChild(o);});
+}
+function updateGoldRankOptions() {
+  goldRankSelect.innerHTML = "";
+  for(let i=1; i<=users.length; i++) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    if (i === users.length) { opt.selected = true; opt.innerText = `第${i}名（默认输最多）`; } 
+    else { opt.innerText = `第${i}名`; }
+    goldRankSelect.appendChild(opt);
+  }
+}
+function refreshAllUI(){renderPersonGroup();renderDelSelect();updateGoldRankOptions();refresh();}
+
+// ========== 极速胡牌核心逻辑 ==========
+function openFastHuModal() {
+    if (!getSelectedSite() || !getSelectedUser()) return;
+    
+    // 1. 重置状态
+    fastState = {
+        huUser: getSelectedUser(),
+        huScore: 0,
+        type: "",
+        paoUser: "",
+        tile: { char: "", name: "" }
+    };
+    keyboardHuInput = "";
+    isHuInputMode = false;
+
+    // 2. 初始化界面
+    document.getElementById("fastHuTitle").innerText = `🎲 【${fastState.huUser}】 极速胡牌`;
+    
+    // 渲染胡数
+    const huGrid = document.getElementById("fastHuGrid");
+    huGrid.innerHTML = "";
+    for(let i=30; i<=400; i+=10) {
+        const btn = document.createElement("button");
+        btn.className = "hu-btn";
+        btn.innerText = i;
+        btn.onclick = () => selectFastHuScore(i, btn);
+        huGrid.appendChild(btn);
+    }
+
+    // 渲染放炮者列表
+    const paoList = document.getElementById("fastPaoPersonList");
+    paoList.innerHTML = "";
+    users.filter(u => u !== fastState.huUser).forEach((u, idx) => {
+        const btn = document.createElement("button");
+        btn.innerText = `${idx+1}.${u}`;
+        btn.onclick = () => selectFastPaoUser(u, btn);
+        paoList.appendChild(btn);
+    });
+
+    // 渲染牌
+    renderFastTiles();
+
+    // 重置UI样式
+    document.getElementById("fastBtnPao").classList.remove("active");
+    document.getElementById("fastBtnZimo").classList.remove("active");
+    document.getElementById("fastPaoArea").classList.remove("show");
+    document.getElementById("fastConfirmBtn").disabled = true;
+
+    openModal(fastHuModal);
+}
+
+function renderFastTiles() {
+    const container = document.getElementById("fastTileContainer");
+    container.innerHTML = "";
+    
+    const types = [
+        { key: 'wan', name: '万子' },
+        { key: 'tiao', name: '条子' },
+        { key: 'tong', name: '筒子' },
+        { key: 'zi', name: '字牌' }
+    ];
+
+    types.forEach(t => {
+        const title = document.createElement("div");
+        title.className = "tile-type-title";
+        title.innerText = t.name;
+        container.appendChild(title);
+
+        const grid = document.createElement("div");
+        grid.className = "fast-tile-grid";
+        
+        tileConfig[t.key].forEach(tile => {
+            const btn = document.createElement("button");
+            btn.className = "fast-tile-btn";
+            btn.innerText = tile.char;
+            btn.title = tile.name;
+            btn.onclick = () => selectFastTile(tile, btn, grid);
+            grid.appendChild(btn);
+        });
+        container.appendChild(grid);
+    });
+}
+
+function selectFastHuScore(score, btn) {
+    // 清除其他选中
+    document.querySelectorAll("#fastHuGrid .hu-btn").forEach(b => b.classList.remove("selected"));
+    if(btn) btn.classList.add("selected");
+    fastState.huScore = score;
+    checkFastReady();
+}
+
+function setFastType(type) {
+    fastState.type = type;
+    const btnPao = document.getElementById("fastBtnPao");
+    const btnZimo = document.getElementById("fastBtnZimo");
+    const paoArea = document.getElementById("fastPaoArea");
+
+    btnPao.classList.remove("active");
+    btnZimo.classList.remove("active");
+
+    if (type === "pao") {
+        btnPao.classList.add("active");
+        paoArea.classList.add("show");
+        // 如果是放炮，必须重新确认放炮者
+        fastState.paoUser = "";
+        document.querySelectorAll("#fastPaoPersonList button").forEach(b => b.classList.remove("selected"));
+        updateKeyboardStatus("放炮模式：按数字选放炮者");
+    } else {
+        btnZimo.classList.add("active");
+        paoArea.classList.remove("show");
+        fastState.paoUser = ""; // 清空放炮者
+        updateKeyboardStatus("自摸模式：选牌后回车确认");
+    }
+    checkFastReady();
+}
+
+function selectFastPaoUser(user, btn) {
+    document.querySelectorAll("#fastPaoPersonList button").forEach(b => b.classList.remove("selected"));
+    if(btn) btn.classList.add("selected");
+    fastState.paoUser = user;
+    updateKeyboardStatus(`放炮者：${user}`);
+    checkFastReady();
+}
+
+function selectFastTile(tile, btn, grid) {
+    // 清除grid内其他选中
+    if(grid) grid.querySelectorAll(".fast-tile-btn").forEach(b => b.classList.remove("selected"));
+    if(btn) btn.classList.add("selected");
+    fastState.tile = tile;
+    updateKeyboardStatus(`胡牌：${tile.name}`);
+    checkFastReady();
+}
+
+function checkFastReady() {
+    const isReady = fastState.huScore > 0 && 
+                    fastState.type !== "" && 
+                    fastState.tile.name !== "" &&
+                    (fastState.type === "zimo" || (fastState.type === "pao" && fastState.paoUser !== ""));
+    
+    document.getElementById("fastConfirmBtn").disabled = !isReady;
+    return isReady;
+}
+
+function confirmFastHu() {
+    if (!checkFastReady()) return;
+
+    let descExtra = "";
+    let militaryData = { active: false, user: "", target: "" };
+    let desc = "";
+
+    if (fastState.type === "pao") {
+        // 检查军师系统是否介入
+        if(militaryActive && currentMilitaryTarget === fastState.paoUser) {
+            descExtra = ` (军师${currentMilitaryUser}分锅)`;
+            militaryData = { active: true, user: currentMilitaryUser, target: fastState.paoUser };
+        }
+
+        desc = `${fastState.huUser}【${fastState.huScore}胡】｜${fastState.paoUser}放炮【${fastState.tile.name}】${descExtra}`;
+        
+        records.push({
+            t: "pao",
+            from: fastState.paoUser,
+            to: fastState.huUser,
+            huScore: fastState.huScore,
+            tile: fastState.tile.char,
+            tileName: fastState.tile.name,
+            desc: desc,
+            time: now(),
+            military: militaryData
+        });
+    } else {
+        desc = `${fastState.huUser}【${fastState.huScore}胡】｜自摸【${fastState.tile.name}】`;
+        records.push({
+            t: "zimo",
+            from: fastState.huUser,
+            huScore: fastState.huScore,
+            tile: fastState.tile.char,
+            tileName: fastState.tile.name,
+            desc: desc,
+            time: now()
+        });
+    }
+
+    closeModal(fastHuModal);
+    refresh();
+}
+
+// ========== 修复：完整的输赢结算逻辑 ==========
+function openSettleModal() {
+  if (!getSelectedSite()) return;
+  settleInputs.innerHTML = "";
+  users.forEach(u => {
+    const div = document.createElement("div");
+    div.className = "settle-input-group";
+    div.innerHTML = `<div class="settle-input-label">${u}</div><input type="number" class="settle-input" id="settle_${u}" placeholder="赢正输负" value="0">`;
+    settleInputs.appendChild(div);
+  });
+  updateGoldRankOptions();
+  openModal(settleModal);
+}
+
+function saveSettle() {
+  const goldRank = parseInt(goldRankSelect.value);
+  let amounts = [];
+  users.forEach(u => {
+    const input = document.getElementById(`settle_${u}`);
+    let val = parseFloat(input.value) || 0;
+    amounts.push({ user: u, amount: val });
+  });
+  const ranked = [...amounts].sort((a, b) => b.amount - a.amount);
+  if(goldRank > ranked.length) { alert("名次无效！"); return; }
+  const goldUser = ranked[goldRank - 1];
+  const resultText = `本次指定第${goldRank}名为财神爷👑：${goldUser.user} 负责付钱！`;
+  
+  settleRecords.push({
+    time: now(), goldRank: goldRank, goldUser: goldUser.user, ranked: ranked, resultText: resultText, raw: amounts
+  });
+  closeModal(settleModal);
+  refresh();
+}
+
+function refreshSettleUI() {
+  if (settleRecords.length === 0) { settleBox.style.display = "none"; return; }
+  settleBox.style.display = "block";
+  let html = "";
+  [...settleRecords].reverse().forEach(rec => {
+    html += `<div class="settle-history-item"><div class="settle-history-time">${rec.time}</div>`;
+    rec.ranked.forEach((item, idx) => {
+      const rank = idx + 1;
+      const isGold = rank === rec.goldRank;
+      const c = item.amount > 0 ? "color:#2d882d" : (item.amount < 0 ? "color:#d92c2c" : "");
+      let cls = "settle-rank-row";
+      if(isGold) cls += " rank-gold"; else if(rank===1) cls += " rank-1"; else if(rank===rec.ranked.length) cls += " rank-last";
+      html += `<div class="${cls}"><span>第${rank}名：${item.user} ${isGold?"👑":""}</span><span style="${c};font-weight:bold">${item.amount>0?"+":""}${item.amount.toFixed(2)}元</span></div>`;
+    });
+    html += `<div class="settle-result-text">${rec.resultText}</div></div>`;
+  });
+  settleHistory.innerHTML = html;
+}
+
+// ========== 称号鉴定逻辑 (修改版，支持平局) ==========
+function calcTitles() {
+  const base = calcBaseStats();
+  const titleData = [];
+  
+  // 辅助函数：找出最大值玩家 (支持平局)
+  const findMax = (keyFn) => {
+    let maxVal = -1;
+    let maxUsers = [];
+    users.forEach(u => {
+      const val = keyFn(base[u] || {});
+      if (val > maxVal) {
+        maxVal = val;
+        maxUsers = [u];
+      } else if (val === maxVal && val > 0) {
+        maxUsers.push(u);
+      }
+    });
+    return { users: maxUsers, count: maxVal };
+  };
+  
+  // 辅助函数：找出最小值玩家 (支持平局)
+  const findMin = (keyFn) => {
+    let minVal = Infinity;
+    let minUsers = [];
+    users.forEach(u => {
+      const val = keyFn(base[u] || {});
+      if (val > 0) { // 必须参与过（大于0）
+        if (val < minVal) {
+          minVal = val;
+          minUsers = [u];
+        } else if (val === minVal) {
+          minUsers.push(u);
+        }
+      }
+    });
+    return { users: minUsers, count: minVal };
+  };
+
+  // 1. 放炮王
+  const pao = findMax(d => d.p);
+  if (pao.users.length > 0) titleData.push(["放炮王", pao.users.join("、"), pao.count, "放炮最多的称为放炮王"]);
+
+  // 2. 他是真的想赢
+  const win = findMax(d => d.w);
+  if (win.users.length > 0) titleData.push(["他是真的想赢", win.users.join("、"), win.count, "获胜最多的叫做“他是真的想赢”"]);
+
+  // 3. 我靠我自己！(自摸最多)
+  const zimo = findMax(d => d.z);
+  if (zimo.users.length > 0) titleData.push(["我靠我自己！", zimo.users.join("、"), zimo.count, "自摸次数最多的称为“我靠我自己！”"]);
+
+  // 4. 真的不当人
+  const jie = findMax(d => d.j);
+  if (jie.users.length > 0) titleData.push(["真的不当人", jie.users.join("、"), jie.count, "截胡最多的叫做“真的不当人”"]);
+
+  // 5. 谁还比我惨
+  const beiJie = findMax(d => d.bj);
+  if (beiJie.users.length > 0) titleData.push(["谁还比我惨", beiJie.users.join("、"), beiJie.count, "被截胡数最多的叫做“谁还比我惨”"]);
+
+  // 6. 泥鳅王
+  const niqiu = findMax(d => d.n);
+  if (niqiu.users.length > 0) titleData.push(["泥鳅王", niqiu.users.join("、"), niqiu.count, "泥鳅最多的称为泥鳅王"]);
+
+  // 7. 狗运真的好！ (3财神+4白板+天&地胡)
+  const luck = findMax(d => (d.c3 || 0) + (d.b4 || 0) + (d.tdh || 0));
+  if (luck.users.length > 0) titleData.push(["狗运真的好！", luck.users.join("、"), luck.count, "3财神、4白板、天&地胡三者计数和最高的称为“狗运真的好！”"]);
+
+  // 8. 操作拉跨王 (第一张被跟+姥姥+诈胡)
+  const caip = findMax(d => (d.bg || 0) + (d.ll || 0) + (d.zh || 0));
+  if (caip.users.length > 0) titleData.push(["操作拉跨王", caip.users.join("、"), caip.count, "第一张被跟、姥姥、诈胡三者计数和最高的称为“操作拉跨王”"]);
+
+  // 9. 灵犀一指狗头军师 (作为军师时放炮最多)
+  const milMax = findMax(d => d.militaryP);
+  if (milMax.users.length > 0) titleData.push(["灵犀一指狗头军师", milMax.users.join("、"), milMax.count, "作为军师时累计分锅（放炮）最多的人"]);
+
+  // 10. 神机妙算诸葛孔明 (作为军师时放炮最少)
+  const milMin = findMin(d => d.militaryP);
+  if (milMin.users.length > 0) titleData.push(["神机妙算诸葛孔明", milMin.users.join("、"), milMin.count, "作为军师时累计分锅（放炮）最少的人"]);
+
+  // 11. 屁胡王！(30/40胡最多)
+  const hu30_40 = findMax(d => d.hu30_40);
+  if (hu30_40.users.length > 0) titleData.push(["屁胡王！", hu30_40.users.join("、"), hu30_40.count, "30胡和40胡计数最多的称为“屁胡王！”"]);
+
+  // 12. 不贪王 (50-80胡最多)
+  const hu50_80 = findMax(d => d.hu50_80);
+  if (hu50_80.users.length > 0) titleData.push(["不贪王", hu50_80.users.join("、"), hu50_80.count, "50-80胡计数最多的称为“不贪王”"]);
+
+  // 13. 饭没吃饱就请你们吃辣子！(400胡最多)
+  const hu400 = findMax(d => d.hu400);
+  if (hu400.users.length > 0) titleData.push(["饭没吃饱就请你们吃辣子！", hu400.users.join("、"), hu400.count, "400胡计数最多的称为“饭没吃饱就请你们吃辣子！”"]);
+
+  // 14. 哥们胡很大但也没那么大 (210-390胡最多)
+  const hu210_390 = findMax(d => d.hu210_390);
+  if (hu210_390.users.length > 0) titleData.push(["哥们胡很大但也没那么大", hu210_390.users.join("、"), hu210_390.count, "210-390胡计数最高的称为“哥们胡很大但也没那么大”"]);
+
+  return titleData;
+}
+
+// 打开称号鉴定弹窗
+function openTitleModal() {
+  if (!getSelectedSite()) return;
+  if (records.length === 0) { alert("暂无数据，无法鉴定！"); return; }
+  
+  const titleResult = calcTitles();
+  
+  // 填充规则
+  const rulesHtml = [
+    "放炮最多的称为放炮王",
+    "获胜最多的叫做“他是真的想赢”",
+    "自摸次数最多的称为“我靠我自己！”",
+    "截胡最多的叫做“真的不当人”",
+    "被截胡数最多的叫做“谁还比我惨”",
+    "泥鳅最多的称为泥鳅王",
+    "3财神、4白板、天&地胡三者计数和最高的称为“狗运真的好！”",
+    "第一张被跟、姥姥、诈胡三者计数和最高的称为“操作拉跨王”",
+    "30胡和40胡计数最多的称为“屁胡王！”",
+    "50-80胡计数最多的称为“不贪王”",
+    "210-390胡计数最高的称为“哥们胡很大但也没那么大”",
+    "400胡计数最多的称为“饭没吃饱就请你们吃辣子！”",
+    "作为军师时累计分锅（放炮）最多的称为“灵犀一指狗头军师”",
+    "作为军师时累计分锅（放炮）最少的称为“神机妙算诸葛孔明”"
+  ].map(r => `<div class="title-rule-item">• ${r}</div>`).join("");
+  document.getElementById("titleRules").innerHTML = rulesHtml;
+
+  // 填充结果
+  if(titleResult.length === 0) {
+    document.getElementById("titleResults").innerHTML = '<div class="empty-tip">暂无封神数据</div>';
+  } else {
+    document.getElementById("titleResults").innerHTML = titleResult.map(row => `
+      <div class="title-result-item">
+        <div>
+          <span class="title-name">${row[0]}</span>
+          <span style="color:#999;font-size:12px;margin-left:5px;">(${row[3]})</span>
+        </div>
+        <div>
+          <span class="title-owner">${row[1]}</span>
+          <span class="title-count">(${Number.isInteger(row[2])?row[2]:row[2].toFixed(1)}次)</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  openModal(titleModal);
+}
+
+// ========== 军师系统逻辑 ==========
+function toggleMilitary() {
+  if (!getSelectedSite() || !getSelectedUser()) return;
+
+  if (militaryActive) {
+    // 关闭军师模式
+    militaryActive = false;
+    currentMilitaryUser = "";
+    currentMilitaryTarget = "";
+    btnMilitary.classList.remove("active");
+    records.push({
+      t: "sys",
+      desc: `军师模式关闭`,
+      time: now()
+    });
+    refresh();
+  } else {
+    // 开启军师模式：先选人
+    currentMilitaryUser = getSelectedUser();
+    openMilitaryModal();
+  }
+}
+
+function openMilitaryModal() {
+  const list = document.getElementById("militaryPersonList");
+  list.innerHTML = "";
+  document.getElementById("militaryModalTitle").innerText = `【${currentMilitaryUser}】要指点谁？`;
+  
+  // 筛选出除了自己之外的人
+  users.filter(u => u !== currentMilitaryUser).forEach(u => {
+    const btn = document.createElement("button");
+    btn.innerText = u;
+    btn.onclick = () => {
+      currentMilitaryTarget = u;
+      militaryActive = true;
+      btnMilitary.classList.add("active");
+      closeModal(militaryModal);
+      
+      records.push({
+        t: "sys",
+        desc: `${currentMilitaryUser} 开启军师模式，指点 ${currentMilitaryTarget}`,
+        time: now()
+      });
+      refresh();
+    };
+    list.appendChild(btn);
+  });
+  openModal(militaryModal);
+}
+
+// ========== 修复：完整的Excel导出功能 (增加杠上开花列 + 列宽设置) ==========
+function exportExcel() {
+  const site = getSelectedSite();
+  if (!site) return;
+  if (records.length===0 && settleRecords.length===0) { alert("暂无记录"); return; }
+
+  const baseStats = calcBaseStats();
+  const paoStats = calcTileStats("pao");
+  const zimoStats = calcTileStats("zimo");
+
+  // Sheet1 实时战报
+  const sheet1 = [["时间","描述","胡数","放炮","获胜","自摸","截胡","被截","泥鳅","3财神","4白板","天&地胡","杠上开花","被跟","诈胡","姥姥","放炮牌","自摸牌"]];
+  records.forEach(r=>{
+    let row = ["","","","","","","","","","","","","","","","","",""];
+    row[0] = r.time; row[1] = r.desc;
+    if(r.huScore) row[2] = r.huScore;
+    if (r.t==="pao") { row[3]=r.from; row[4]=r.to; row[16] = `${r.tileName}${r.tile}`; }
+    if (r.t==="zimo") { row[4]=r.from; row[5]=1; row[17] = `${r.tileName}${r.tile}`; }
+    if (r.t==="jie") { row[6]=r.from; row[7]=r.to; }
+    if (r.t==="one") {
+      const idx = {"泥鳅":8,"3财神":9,"4白板":10,"天&地胡":11,"杠上开花":12,"第一张被跟":13,"诈胡":14,"姥姥":15}[r.a];
+      if (idx) row[idx] = r.f;
+    }
+    sheet1.push(row);
+  });
+
+  // Sheet2 基础计数
+  const sheet2 = [["玩家","放炮","放炮胡数","获胜","自摸","截胡","被截","3财神","4白板","天&地胡","杠上开花","被跟","诈胡","姥姥","军师分锅数","30/40胡","50-80胡","90-200胡","210-390胡","400胡"]];
+  users.forEach(u=>{
+    const d = baseStats[u] || {p:0,paoScore:0,w:0,z:0,j:0,bj:0,c3:0,b4:0,tdh:0,gs:0,bg:0,zh:0,ll:0,militaryP:0,hu30_40:0,hu50_80:0,hu90_200:0,hu210_390:0,hu400:0};
+    sheet2.push([u, d.p, d.paoScore, d.w, d.z, d.j, d.bj, d.c3, d.b4, d.tdh, d.gs, d.bg, d.zh, d.ll, d.militaryP, d.hu30_40, d.hu50_80, d.hu90_200, d.hu210_390, d.hu400]);
+  });
+
+  // Sheet3 胡牌统计
+  const sheet3 = [["【放炮牌】全局排行","",""], ["牌名","字符","放炮次数"]];
+  paoStats.sortedGlobal.forEach(i => sheet3.push([i.tile.slice(0,-2), i.tile.slice(-2), i.count]));
+  sheet3.push([]); sheet3.push(["【放炮牌】个人明细","",""]); sheet3.push(["玩家","牌名","次数"]);
+  users.forEach(u => {
+    Object.entries(paoStats.personCount[u]||{}).sort((a,b)=>b[1]-a[1]).forEach(i=>sheet3.push([u,i[0],i[1]]));
+  });
+  sheet3.push([]); sheet3.push(["【自摸牌】全局排行","",""], ["牌名","字符","自摸次数"]);
+  zimoStats.sortedGlobal.forEach(i => sheet3.push([i.tile.slice(0,-2), i.tile.slice(-2), i.count]));
+  sheet3.push([]); sheet3.push(["【自摸牌】个人明细","",""]); sheet3.push(["玩家","牌名","次数"]);
+  users.forEach(u => {
+    Object.entries(zimoStats.personCount[u]||{}).sort((a,b)=>b[1]-a[1]).forEach(i=>sheet3.push([u,i[0],i[1]]));
+  });
+  sheet3.push([]); sheet3.push(["牌局参与",""]); sheet3.push(["玩家","局数"]);
+  users.forEach(u => sheet3.push([u, (baseStats[u]||{}).game||0]));
+
+  // Sheet4 输赢结算
+  const sheet4 = [["👑 输赢结算&财神记录"]];
+  sheet4.push(["结算时间", "排名", "玩家", "输赢金额", "是否财神爺", "规则"]);
+  settleRecords.forEach(rec => {
+    const rule = `指定第${rec.goldRank}名`;
+    rec.ranked.forEach((item, idx) => {
+      const r = idx+1;
+      sheet4.push([idx===0?rec.time:"", `第${r}名`, item.user, item.amount, r===rec.goldRank?"是👑":"否", idx===0?rule:""]);
+    });
+    sheet4.push([]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet(sheet1);
+  const ws2 = XLSX.utils.aoa_to_sheet(sheet2);
+  const ws3 = XLSX.utils.aoa_to_sheet(sheet3);
+  const ws4 = XLSX.utils.aoa_to_sheet(sheet4);
+  
+  // 设置列宽，修复长文本显示不全问题
+  ws1['!cols'] = [{wch:12},{wch:50},{wch:6},{wch:8},{wch:8},{wch:6},{wch:6},{wch:6},{wch:6},{wch:6},{wch:6},{wch:8},{wch:10},{wch:6},{wch:6},{wch:6},{wch:10},{wch:10}];
+  ws2['!cols'] = [{wch:10},{wch:6},{wch:6},{wch:6},{wch:6},{wch:6},{wch:6},{wch:6},{wch:6},{wch:8},{wch:10},{wch:6},{wch:6},{wch:6},{wch:8},{wch:10},{wch:8},{wch:8},{wch:10},{wch:12},{wch:8}];
+  ws3['!cols'] = [{wch:20},{wch:6},{wch:8}];
+  ws4['!cols'] = [{wch:12},{wch:8},{wch:10},{wch:10},{wch:10},{wch:15}];
+  
+  XLSX.utils.book_append_sheet(wb, ws1, "实时战报");
+  XLSX.utils.book_append_sheet(wb, ws2, "计数统计");
+  XLSX.utils.book_append_sheet(wb, ws3, "胡牌统计");
+  if(settleRecords.length>0) XLSX.utils.book_append_sheet(wb, ws4, "输赢结算");
+
+  // 称号页
+  const titleResult = calcTitles();
+  if(titleResult.length > 0) {
+    const sheet5 = [];
+    sheet5.push(["🏆 称号说明"]);
+    const rules = [
+      "放炮最多的称为放炮王",
+      "获胜最多的叫做“他是真的想赢”",
+      "自摸次数最多的称为“我靠我自己！”",
+      "截胡最多的叫做“真的不当人”",
+      "被截胡数最多的叫做“谁还比我惨”",
+      "泥鳅最多的称为泥鳅王",
+      "3财神、4白板、天&地胡三者计数和最高的称为“狗运真的好！”",
+      "第一张被跟、姥姥、诈胡三者计数和最高的称为“操作拉跨王”",
+      "30胡和40胡计数最多的称为“屁胡王！”",
+      "50-80胡计数最多的称为“不贪王”",
+      "210-390胡计数最高的称为“哥们胡很大但也没那么大”",
+      "400胡计数最多的称为“饭没吃饱就请你们吃辣子！”",
+      "作为军师时放炮最多的称为“灵犀一指狗头军师”",
+      "作为军师时放炮最少的称为“神机妙算诸葛孔明”"
+    ];
+    rules.forEach(r => sheet5.push([r]));
+    sheet5.push([]); sheet5.push(["=================="]);
+    sheet5.push(["🎖️ 封神榜"]);
+    sheet5.push(["称号", "得主", "次数/统计"]);
+    titleResult.forEach(row => sheet5.push([row[0], row[1], row[2]]));
+    const ws5 = XLSX.utils.aoa_to_sheet(sheet5);
+    ws5['!cols'] = [{wch:30},{wch:20},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, ws5, "称号鉴定");
+  }
+
+  XLSX.writeFile(wb, `${site}_${getDateStr()}_麻将战报.xlsx`);
+}
+
+// 撤销/清空/存储
+function undo(){ 
+  if(records.length===0 && settleRecords.length===0){alert("无记录");return;}
+  const rt = records.length>0?records[records.length-1].time:"0";
+  const st = settleRecords.length>0?settleRecords[settleRecords.length-1].time:"0";
+  if(rt>st) {
+    // 如果撤销的是军师开启的记录，需要重置状态
+    const lastRec = records[records.length-1];
+    if(lastRec.t === "sys" && lastRec.desc.includes("军师模式")) {
+      militaryActive = false;
+      currentMilitaryUser = "";
+      currentMilitaryTarget = "";
+      btnMilitary.classList.remove("active");
+    }
+    records.pop();
+    updateKeyboardStatus("已撤销上一步");
+  } else {
+    settleRecords.pop();
+    updateKeyboardStatus("已撤销结算");
+  }
+  refresh();
+}
+function clearAll(){ if(confirm("清空所有？")){ records=[]; settleRecords=[]; militaryActive=false; currentMilitaryUser=""; currentMilitaryTarget=""; btnMilitary.classList.remove("active"); refresh(); } }
+function saveToLocal(){
+  const site = getSelectedSite() || "水印城";
+  // 按场地隔离存储
+  localStorage.setItem(`mj_u_${site}`, JSON.stringify(users));
+  localStorage.setItem(`mj_r_${site}`, JSON.stringify(records));
+  localStorage.setItem(`mj_s_${site}`, JSON.stringify(settleRecords));
+  // 保存军师状态
+  localStorage.setItem(`mj_m_${site}`, JSON.stringify({
+    active: militaryActive,
+    user: currentMilitaryUser,
+    target: currentMilitaryTarget
+  }));
+}
+function loadLocal(){
+  try{
+    const site = getSelectedSite() || "水印城";
+    // 按场地加载数据
+    const u=localStorage.getItem(`mj_u_${site}`); 
+    if(u) users=JSON.parse(u);
+    else {
+      // 兼容旧版本全局数据
+      const oldU = localStorage.getItem('mj_u');
+      if(oldU) users = JSON.parse(oldU);
+    }
+    
+    const r=localStorage.getItem(`mj_r_${site}`); 
+    if(r) records=JSON.parse(r);
+    else {
+      const oldR = localStorage.getItem('mj_r');
+      if(oldR) records = JSON.parse(oldR);
+    }
+    
+    const s=localStorage.getItem(`mj_s_${site}`); 
+    if(s) settleRecords=JSON.parse(s);
+    else {
+      const oldS = localStorage.getItem('mj_s');
+      if(oldS) settleRecords = JSON.parse(oldS);
+    }
+    
+    // 恢复军师状态
+    const m=localStorage.getItem(`mj_m_${site}`); 
+    if(m) {
+      const mData = JSON.parse(m);
+      militaryActive = mData.active;
+      currentMilitaryUser = mData.user;
+      currentMilitaryTarget = mData.target;
+      if(militaryActive) btnMilitary.classList.add("active");
+    } else {
+      // 兼容旧版本
+      const oldM = localStorage.getItem('mj_m');
+      if(oldM) {
+        const mData = JSON.parse(oldM);
+        militaryActive = mData.active;
+        currentMilitaryUser = mData.user;
+        currentMilitaryTarget = mData.target;
+        if(militaryActive) btnMilitary.classList.add("active");
+      }
+    }
+  }catch(e){console.error(e);}
+}
+
+// 切换场地时重新加载数据
+document.querySelectorAll('input[name="site"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    loadLocal();
+    refreshAllUI();
+    updateKeyboardStatus(`已切换到：${getSelectedSite()}`);
+  });
+});
+
+// ========== 键盘快捷键核心逻辑 ==========
+document.addEventListener('keydown', (e) => {
+  // 忽略输入框聚焦时的快捷键
+  const activeTag = document.activeElement.tagName;
+  if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
+    // 胡数输入模式特殊处理
+    if(isHuInputMode && e.key === 'Enter') {
+      e.preventDefault();
+      const score = parseInt(keyboardHuInput);
+      if(score >= 10 && score <= 1000) {
+        selectFastHuScore(score);
+        updateKeyboardStatus(`已设置胡数：${score}`);
+      }
+      isHuInputMode = false;
+      keyboardHuInput = "";
+      return;
+    }
+    if(isHuInputMode && e.key === 'Backspace') {
+      keyboardHuInput = keyboardHuInput.slice(0, -1);
+      updateKeyboardStatus(`输入胡数：${keyboardHuInput || '_'}`);
+      e.preventDefault();
+      return;
+    }
+    if(isHuInputMode && e.key === 'Escape') {
+      isHuInputMode = false;
+      keyboardHuInput = "";
+      updateKeyboardStatus("已取消胡数输入");
+      return;
+    }
+    if(isHuInputMode && /[0-9]/.test(e.key)) {
+      keyboardHuInput += e.key;
+      updateKeyboardStatus(`输入胡数：${keyboardHuInput}`);
+      e.preventDefault();
+      return;
+    }
+    return;
+  }
+
+  // Esc 关闭所有弹窗/取消操作
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    const openModals = document.querySelectorAll('.modal.show');
+    if(openModals.length > 0) {
+      openModals.forEach(m => closeModal(m));
+      updateKeyboardStatus("已取消/关闭弹窗");
+    }
+    isHuInputMode = false;
+    keyboardHuInput = "";
+    return;
+  }
+
+  // Backspace 撤销
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    undo();
+    return;
+  }
+
+  // 数字键 1-5 选择玩家
+  if (/^[1-5]$/.test(e.key)) {
+    e.preventDefault();
+    const idx = parseInt(e.key) - 1;
+    
+    // 如果胡牌弹窗打开且是放炮模式，数字键选择放炮者
+    if(fastHuModal.classList.contains('show') && fastState.type === 'pao') {
+      const paoBtns = document.querySelectorAll('#fastPaoPersonList button');
+      if(paoBtns[idx]) {
+        paoBtns[idx].click();
+      }
+      return;
+    }
+    
+    // 否则选择当前操作玩家
+    selectUserByIndex(idx);
+    return;
+  }
+
+  // Z 键：自摸模式
+  if (e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    if(!fastHuModal.classList.contains('show')) {
+      openFastHuModal();
+    }
+    setTimeout(() => setFastType('zimo'), 50);
+    return;
+  }
+
+  // F 键：放炮模式
+  if (e.key.toLowerCase() === 'f') {
+    e.preventDefault();
+    if(!fastHuModal.classList.contains('show')) {
+      openFastHuModal();
+    }
+    setTimeout(() => setFastType('pao'), 50);
+    return;
+  }
+
+  // J 键：截胡
+  if (e.key.toLowerCase() === 'j') {
+    e.preventDefault();
+    prepareJieHu();
+    return;
+  }
+
+  // G 键：狗运操作
+  if (e.key.toLowerCase() === 'g') {
+    e.preventDefault();
+    openDogLuckModal();
+    return;
+  }
+
+  // C 键：菜P操作
+  if (e.key.toLowerCase() === 'c') {
+    e.preventDefault();
+    openCaiPModal();
+    return;
+  }
+
+  // H 键：进入胡数输入模式
+  if (e.key.toLowerCase() === 'h') {
+    e.preventDefault();
+    if(!fastHuModal.classList.contains('show')) {
+      openFastHuModal();
+    }
+    isHuInputMode = true;
+    keyboardHuInput = "";
+    updateKeyboardStatus("输入胡数模式：直接输数字回车确认");
+    return;
+  }
+
+  // 上箭头：胡数+10
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if(fastHuModal.classList.contains('show')) {
+      let newScore = Math.min(fastState.huScore + 10, 400);
+      if(newScore < 30) newScore = 30;
+      // 找到对应按钮并点击
+      document.querySelectorAll('#fastHuGrid .hu-btn').forEach(btn => {
+        if(parseInt(btn.innerText) === newScore) {
+          btn.click();
+        }
+      });
+      updateKeyboardStatus(`胡数+10 → ${newScore}`);
+    }
+    return;
+  }
+
+  // 下箭头：胡数-10
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if(fastHuModal.classList.contains('show')) {
+      let newScore = Math.max(fastState.huScore - 10, 30);
+      // 找到对应按钮并点击
+      document.querySelectorAll('#fastHuGrid .hu-btn').forEach(btn => {
+        if(parseInt(btn.innerText) === newScore) {
+          btn.click();
+        }
+      });
+      updateKeyboardStatus(`胡数-10 → ${newScore}`);
+    }
+    return;
+  }
+
+  // 回车：确认胡牌
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if(fastHuModal.classList.contains('show') && !document.getElementById('fastConfirmBtn').disabled) {
+      confirmFastHu();
+      updateKeyboardStatus("已记录胡牌！");
+    }
+    return;
+  }
+
+  // 空格：打开胡牌弹窗
+  if (e.key === ' ') {
+    e.preventDefault();
+    openFastHuModal();
+    return;
+  }
+});
+
+// 启动
+loadLocal();
+refreshAllUI();
+</script>
+</body>
+</html>
