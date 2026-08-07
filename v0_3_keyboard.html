@@ -94,7 +94,7 @@ body {
 .stats-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1100px;
+  min-width: 750px;
 }
 .stats-table th {
   font-weight: bold;
@@ -111,6 +111,35 @@ body {
   border-bottom: 1px solid #f8f8f8;
   text-align: center;
   white-space: nowrap;
+}
+.stats-pao-matrix {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+.stats-pao-matrix th {
+  font-size: 13px;
+  padding: 8px 4px;
+  color: #666;
+  background: #f8f9fa;
+}
+.stats-other-table {
+  margin-top: 8px;
+}
+.stats-other-table th {
+  font-size: 13px;
+  padding: 8px 4px;
+  color: #666;
+  border-bottom: 1px solid #eee;
+}
+.stats-other-table td {
+  font-size: 14px;
+  color: #555;
+  padding: 8px 4px;
+  border-bottom: none;
+}
+.stats-other-table .col-name {
+  background: #fff;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
 }
 .stats-table .col-name {
   text-align: left;
@@ -760,7 +789,7 @@ body {
   <span class="keyboard-status" id="keyboardStatus">待命</span>
 </div>
 
-<!-- 基础数据统计面板 - table布局完美对齐 -->
+<!-- 基础数据统计面板 - 主表核心数据 -->
 <div class="stats-box">
   <div class="stats-title">实时统计</div>
   <table class="stats-table">
@@ -771,6 +800,25 @@ body {
         <th>放炮胡数</th>
         <th>获胜</th>
         <th>自摸</th>
+        <th>30/40胡</th>
+        <th>50-80胡</th>
+        <th>90-200胡</th>
+        <th>210-390胡</th>
+        <th>400胡</th>
+      </tr>
+    </thead>
+    <tbody id="stats"></tbody>
+  </table>
+  <!-- 放炮交叉统计：谁给谁点炮 -->
+  <table class="stats-table stats-pao-matrix">
+    <thead id="paoMatrixHead"></thead>
+    <tbody id="statsPaoMatrix"></tbody>
+  </table>
+  <!-- 其他杂项统计 -->
+  <table class="stats-table stats-other-table">
+    <thead>
+      <tr>
+        <th class="col-name">玩家</th>
         <th>截胡</th>
         <th>被截</th>
         <th>3财神</th>
@@ -780,14 +828,9 @@ body {
         <th>被跟</th>
         <th>诈胡</th>
         <th>姥姥</th>
-        <th>30/40胡</th>
-        <th>50-80胡</th>
-        <th>90-200胡</th>
-        <th>210-390胡</th>
-        <th>400胡</th>
       </tr>
     </thead>
-    <tbody id="stats"></tbody>
+    <tbody id="statsOther"></tbody>
   </table>
 </div>
 
@@ -806,10 +849,6 @@ body {
       <div class="tile-rank-grid" id="globalZimoTileRank"></div>
       <div class="tile-stats-subtitle">👤 个人自摸明细</div>
       <div class="person-tile-grid" id="personZimoTileDetail"></div>
-    </div>
-    <div class="combined-block">
-      <div class="tile-stats-subtitle">📊 牌局参与统计</div>
-      <div class="game-grid" id="gameCountDetail"></div>
     </div>
   </div>
 </div>
@@ -1142,16 +1181,26 @@ function calcTileStats(type) {
 // 界面刷新
 function refresh() {
   const base=calcBaseStats(), pao=calcTileStats("pao"), zimo=calcTileStats("zimo");
-  // 统计面板
-  stats.innerHTML = users.map(u=>{
-    const d=base[u]||{p:0,w:0,z:0,j:0,bj:0,n:0,c3:0,b4:0,tdh:0,gs:0,bg:0,zh:0,ll:0,game:0,militaryP:0,hu30_40:0,hu50_80:0,hu90_200:0,hu210_390:0,hu400:0};
+  // 统计面板：主表核心数据 + 放炮交叉表 + 其他数据
+  let mainStatsHtml = "";
+  let otherStatsHtml = "";
+  users.forEach(u=>{
+    const d=base[u]||{p:0,paoScore:0,w:0,z:0,j:0,bj:0,c3:0,b4:0,tdh:0,gs:0,bg:0,zh:0,ll:0,militaryP:0,hu30_40:0,hu50_80:0,hu90_200:0,hu210_390:0,hu400:0};
     const displayP = Number.isInteger(d.p)? d.p : d.p.toFixed(1);
-    return `<tr>
+    mainStatsHtml += `<tr>
       <td class="col-name">${u}</td>
       <td>${displayP}</td>
       <td style="color:#e67e22;font-weight:bold">${d.paoScore}</td>
       <td>${d.w}</td>
       <td>${d.z}</td>
+      <td>${d.hu30_40}</td>
+      <td>${d.hu50_80}</td>
+      <td>${d.hu90_200}</td>
+      <td>${d.hu210_390}</td>
+      <td>${d.hu400}</td>
+    </tr>`;
+    otherStatsHtml += `<tr>
+      <td class="col-name">${u}</td>
       <td>${d.j}</td>
       <td>${d.bj}</td>
       <td>${d.c3}</td>
@@ -1161,13 +1210,42 @@ function refresh() {
       <td>${d.bg}</td>
       <td>${d.zh}</td>
       <td>${d.ll}</td>
-      <td>${d.hu30_40}</td>
-      <td>${d.hu50_80}</td>
-      <td>${d.hu90_200}</td>
-      <td>${d.hu210_390}</td>
-      <td>${d.hu400}</td>
     </tr>`;
-  }).join("");
+  });
+  stats.innerHTML = mainStatsHtml;
+  document.getElementById("statsOther").innerHTML = otherStatsHtml;
+
+  // 放炮交叉统计：谁给谁点炮（次数/胡数）
+  const paoMatrix = {};
+  users.forEach(u => {
+    paoMatrix[u] = {};
+    users.forEach(v => paoMatrix[u][v] = {count:0, score:0});
+  });
+  records.forEach(r => {
+    if(r.t === "pao" && paoMatrix[r.from] && paoMatrix[r.from][r.to]) {
+      paoMatrix[r.from][r.to].count++;
+      paoMatrix[r.from][r.to].score += r.huScore || 0;
+    }
+  });
+  let matrixHeadHtml = `<tr><th class="col-name">放炮＼胡牌</th>`;
+  users.forEach(u => matrixHeadHtml += `<th>${u}</th>`);
+  matrixHeadHtml += `</tr>`;
+  document.getElementById("paoMatrixHead").innerHTML = matrixHeadHtml;
+  let matrixBodyHtml = "";
+  users.forEach(from => {
+    matrixBodyHtml += `<tr><td class="col-name">${from}</td>`;
+    users.forEach(to => {
+      if(from === to) {
+        matrixBodyHtml += `<td style="color:#ccc">-</td>`;
+      } else {
+        const d = paoMatrix[from][to];
+        const color = d.count > 0 ? '#d92c2c' : '#999';
+        matrixBodyHtml += `<td style="color:${color};font-size:13px">${d.count}次/${d.score}胡</td>`;
+      }
+    });
+    matrixBodyHtml += `</tr>`;
+  });
+  document.getElementById("statsPaoMatrix").innerHTML = matrixBodyHtml;
 
   // 牌统计渲染
   const r=(s,g,p)=>{
@@ -1182,12 +1260,6 @@ function refresh() {
   };
   r(pao,"globalPaoTileRank","personPaoTileDetail");
   r(zimo,"globalZimoTileRank","personZimoTileDetail");
-
-  // 牌局统计
-  document.getElementById("gameCountDetail").innerHTML=users.map(u=>
-    `<div class="person-tile-card"><div class="person-tile-name">${u}</div>
-    <div style="font-size:24px;color:#8e44ad;text-align:center">${(base[u]||{}).game||0}局</div></div>`
-  ).join("");
 
   log.innerText = records.map(r=>`[${r.time}] ${r.desc}`).join("\n");
   refreshSettleUI();
@@ -1573,61 +1645,38 @@ function calcTitles() {
     return { users: minUsers, count: minVal };
   };
 
-  // 1. 放炮王
+  // 1. 财神爷！！！（被指定为财神爷，排第一个）
+  const goldCount = {};
+  users.forEach(u => goldCount[u] = 0);
+  settleRecords.forEach(s => {
+    if(goldCount[s.goldUser] !== undefined) goldCount[s.goldUser]++;
+  });
+  let maxGold = -1, goldUsers = [];
+  users.forEach(u => {
+    if(goldCount[u] > maxGold) {
+      maxGold = goldCount[u];
+      goldUsers = [u];
+    } else if(goldCount[u] === maxGold && maxGold > 0) {
+      goldUsers.push(u);
+    }
+  });
+  if (goldUsers.length > 0) titleData.push(["财神爷！！！", goldUsers.join("、"), maxGold, "被指定为财神爷"]);
+
+  // 2. 真·放炮王！（放炮胡数最多）
+  const realPao = findMax(d => d.paoScore);
+  if (realPao.users.length > 0) titleData.push(["真·放炮王！", realPao.users.join("、"), realPao.count, "累计放炮胡数最高的称为真·放炮王！"]);
+
+  // 3. 放炮王！（放炮次数最多）
   const pao = findMax(d => d.p);
-  if (pao.users.length > 0) titleData.push(["放炮王", pao.users.join("、"), pao.count, "放炮最多的称为放炮王"]);
+  if (pao.users.length > 0) titleData.push(["放炮王！", pao.users.join("、"), pao.count, "放炮次数最多的称为放炮王！"]);
 
-  // 2. 他是真的想赢
-  const win = findMax(d => d.w);
-  if (win.users.length > 0) titleData.push(["他是真的想赢", win.users.join("、"), win.count, "获胜最多的叫做“他是真的想赢”"]);
-
-  // 3. 我靠我自己！(自摸最多)
-  const zimo = findMax(d => d.z);
-  if (zimo.users.length > 0) titleData.push(["我靠我自己！", zimo.users.join("、"), zimo.count, "自摸次数最多的称为“我靠我自己！”"]);
-
-  // 4. 真的不当人
-  const jie = findMax(d => d.j);
-  if (jie.users.length > 0) titleData.push(["真的不当人", jie.users.join("、"), jie.count, "截胡最多的叫做“真的不当人”"]);
-
-  // 5. 谁还比我惨
-  const beiJie = findMax(d => d.bj);
-  if (beiJie.users.length > 0) titleData.push(["谁还比我惨", beiJie.users.join("、"), beiJie.count, "被截胡数最多的叫做“谁还比我惨”"]);
-
-  // 6. 泥鳅王
-  const niqiu = findMax(d => d.n);
-  if (niqiu.users.length > 0) titleData.push(["泥鳅王", niqiu.users.join("、"), niqiu.count, "泥鳅最多的称为泥鳅王"]);
-
-  // 7. 狗运真的好！ (3财神+4白板+天&地胡)
+  // 4. 狗运王！ (3财神+4白板+天&地胡)
   const luck = findMax(d => (d.c3 || 0) + (d.b4 || 0) + (d.tdh || 0));
-  if (luck.users.length > 0) titleData.push(["狗运真的好！", luck.users.join("、"), luck.count, "3财神、4白板、天&地胡三者计数和最高的称为“狗运真的好！”"]);
+  if (luck.users.length > 0) titleData.push(["狗运王！", luck.users.join("、"), luck.count, "3财神、4白板、天&地胡三者计数和最高的称为狗运王！"]);
 
-  // 8. 操作拉跨王 (第一张被跟+姥姥+诈胡)
+  // 5. 菜P王！ (第一张被跟+姥姥+诈胡)
   const caip = findMax(d => (d.bg || 0) + (d.ll || 0) + (d.zh || 0));
-  if (caip.users.length > 0) titleData.push(["操作拉跨王", caip.users.join("、"), caip.count, "第一张被跟、姥姥、诈胡三者计数和最高的称为“操作拉跨王”"]);
-
-  // 9. 灵犀一指狗头军师 (作为军师时放炮最多)
-  const milMax = findMax(d => d.militaryP);
-  if (milMax.users.length > 0) titleData.push(["灵犀一指狗头军师", milMax.users.join("、"), milMax.count, "作为军师时累计分锅（放炮）最多的人"]);
-
-  // 10. 神机妙算诸葛孔明 (作为军师时放炮最少)
-  const milMin = findMin(d => d.militaryP);
-  if (milMin.users.length > 0) titleData.push(["神机妙算诸葛孔明", milMin.users.join("、"), milMin.count, "作为军师时累计分锅（放炮）最少的人"]);
-
-  // 11. 屁胡王！(30/40胡最多)
-  const hu30_40 = findMax(d => d.hu30_40);
-  if (hu30_40.users.length > 0) titleData.push(["屁胡王！", hu30_40.users.join("、"), hu30_40.count, "30胡和40胡计数最多的称为“屁胡王！”"]);
-
-  // 12. 不贪王 (50-80胡最多)
-  const hu50_80 = findMax(d => d.hu50_80);
-  if (hu50_80.users.length > 0) titleData.push(["不贪王", hu50_80.users.join("、"), hu50_80.count, "50-80胡计数最多的称为“不贪王”"]);
-
-  // 13. 饭没吃饱就请你们吃辣子！(400胡最多)
-  const hu400 = findMax(d => d.hu400);
-  if (hu400.users.length > 0) titleData.push(["饭没吃饱就请你们吃辣子！", hu400.users.join("、"), hu400.count, "400胡计数最多的称为“饭没吃饱就请你们吃辣子！”"]);
-
-  // 14. 哥们胡很大但也没那么大 (210-390胡最多)
-  const hu210_390 = findMax(d => d.hu210_390);
-  if (hu210_390.users.length > 0) titleData.push(["哥们胡很大但也没那么大", hu210_390.users.join("、"), hu210_390.count, "210-390胡计数最高的称为“哥们胡很大但也没那么大”"]);
+  if (caip.users.length > 0) titleData.push(["菜P王！", caip.users.join("、"), caip.count, "第一张被跟、姥姥、诈胡三者计数和最高的称为菜P王！"]);
 
   return titleData;
 }
@@ -1641,20 +1690,11 @@ function openTitleModal() {
   
   // 填充规则
   const rulesHtml = [
-    "放炮最多的称为放炮王",
-    "获胜最多的叫做“他是真的想赢”",
-    "自摸次数最多的称为“我靠我自己！”",
-    "截胡最多的叫做“真的不当人”",
-    "被截胡数最多的叫做“谁还比我惨”",
-    "泥鳅最多的称为泥鳅王",
-    "3财神、4白板、天&地胡三者计数和最高的称为“狗运真的好！”",
-    "第一张被跟、姥姥、诈胡三者计数和最高的称为“操作拉跨王”",
-    "30胡和40胡计数最多的称为“屁胡王！”",
-    "50-80胡计数最多的称为“不贪王”",
-    "210-390胡计数最高的称为“哥们胡很大但也没那么大”",
-    "400胡计数最多的称为“饭没吃饱就请你们吃辣子！”",
-    "作为军师时累计分锅（放炮）最多的称为“灵犀一指狗头军师”",
-    "作为军师时累计分锅（放炮）最少的称为“神机妙算诸葛孔明”"
+    "被指定排名的，那就是财神爷！！！",
+    "累计放炮胡数最高的称为真·放炮王！",
+    "放炮次数最多的称为放炮王！",
+    "3财神、4白板、天&地胡三者计数和最高的称为狗运王！",
+    "菜P操作最多的（第一张被跟、姥姥、诈胡）的称为菜P王！"
   ].map(r => `<div class="title-rule-item">• ${r}</div>`).join("");
   document.getElementById("titleRules").innerHTML = rulesHtml;
 
@@ -1670,7 +1710,7 @@ function openTitleModal() {
         </div>
         <div>
           <span class="title-owner">${row[1]}</span>
-          <span class="title-count">(${Number.isInteger(row[2])?row[2]:row[2].toFixed(1)}次)</span>
+          <span class="title-count">(${Number.isInteger(row[2])?row[2]:row[2].toFixed(1)}${row[0] === '真·放炮王！' ? '胡' : (row[0] === '财神爷！！！' ? '' : '次')})</span>
         </div>
       </div>
     `).join("");
