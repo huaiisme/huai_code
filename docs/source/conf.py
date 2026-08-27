@@ -1,5 +1,5 @@
 # -- Project information -----------------------------------------------------
-project = 'Huai Knowledge Base'
+project = '黑色阿怀神的各种笔记'
 copyright = '2026, Huai'
 author = 'Huai'
 release = '0.1'
@@ -27,8 +27,9 @@ myst_enable_extensions = [
     "tasklist",         # 支持 [ ] [x] 任务列表
     "html_image",       # 支持 HTML 图片标签
     "deflist",          # 新增：定义列表，术语解释神器
-    "attrs_block",      # 新增：给段落/代码块加自定义属性、锚点
     "smartquotes",      # 新增：智能替换直引号为弯引号，排版更美观
+    "attrs_inline",     # 作用：给行内元素、列表项、链接、文字，在行末尾加 {.class} 附加 CSS class /id/ 属性。
+    "attrs_block",      # 作用：给整块内容（整个代码块、整个提示块、整个 div）附加 class/id，单独占一行写属性。
 ]
 
 myst_linkify_options = {
@@ -71,6 +72,7 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 html_css_files = ['custom.css']
 
+
 # 显示页面源码链接
 html_show_sourcelink = True
 # 显示上一页/下一页导航
@@ -84,7 +86,7 @@ html_theme_options = {
     'style_external_links': True,       # 外部链接加跳转图标
     'collapse_navigation': False,       # 侧边栏默认展开
     'sticky_navigation': True,          # 侧边栏滚动时固定
-    'navigation_depth': 4,              # 侧边栏最多显示四级标题
+    'navigation_depth': 8,              # 侧边栏最多显示8级标题
     'includehidden': True,
     'titles_only': False
 }
@@ -94,3 +96,5 @@ copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: "
 copybutton_prompt_is_regexp = True
 copybutton_only_copy_prompt_lines = False
 copybutton_remove_prompts = True
+
+print("✅ 静态目录配置:", html_static_path)

@@ -3,46 +3,40 @@
    适配 sphinx_rtd_theme + MyST Markdown
    ============================================ */
 
-/* ---------- 1. 图片核心样式（解决尺寸/居中/边框问题） ---------- */
-/* 重置主题对图片的强制覆盖，确保自定义尺寸生效 */
+/* 【0. 全局重置 / 主题覆盖层】
+   用途：覆盖sphinx_rtd_theme原生默认样式，全局生效
+   ============================================ */
 .rst-content img {
     height: auto;
-    max-width: 100%; /* 小屏自适应，不溢出内容区 */
+    max-width: 100%;
 }
 
-/* 带边框图片样式（对应 .img-bordered 类） */
+/* ---------- 1. 图片工具类 组件 ---------- */
 .img-bordered {
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     padding: 4px;
     display: block;
-    margin: 16px auto; /* 水平居中，上下留间距 */
+    margin: 16px auto;
     background: #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
-
-/* 尺寸工具类：按需叠加使用 */
 .img-w-100 { width: 100px !important; }
 .img-w-150 { width: 150px !important; }
 .img-w-200 { width: 200px !important; }
 .img-w-300 { width: 300px !important; }
 .img-w-400 { width: 400px !important; }
 
-/* ---------- 2. 通用排版优化 ---------- */
-/* 正文行高与字间距，提升中文阅读体验 */
+/* ---------- 2. 通用正文排版优化 ---------- */
 .rst-content p {
     line-height: 1.8;
     margin-bottom: 1em;
 }
-
-/* 标题间距优化 */
 .rst-content h1, .rst-content h2, .rst-content h3 {
     margin-top: 1.5em;
     margin-bottom: 0.8em;
     font-weight: 600;
 }
-
-/* 高亮提示框：提升优先级，覆盖主题默认样式 */
 .rst-content .highlight-box {
     background-color: #f0f9ff !important;
     border-left: 4px solid #3b82f6 !important;
@@ -54,38 +48,29 @@
     display: block !important;
 }
 
-
-
-
-/* ---------- 3. 表格样式优化 ---------- */
-/* 修复 RTD 主题表格边框不清晰的问题 */
+/* ---------- 3. 表格组件 ---------- */
 table.docutils {
     border-collapse: collapse;
     width: 100%;
     margin: 16px 0;
 }
-
 table.docutils th,
 table.docutils td {
     border: 1px solid #e5e7eb;
     padding: 8px 12px;
     text-align: left;
 }
-
 table.docutils th {
     background: #f8fafc;
     font-weight: 600;
 }
 
-/* ---------- 4. 代码块优化 ---------- */
-/* 代码块圆角与边距 */
+/* ---------- 4. 代码块组件 ---------- */
 pre {
     border-radius: 6px;
     padding: 12px 16px !important;
     line-height: 1.6;
 }
-
-/* 行号列与代码区的分隔 */
 .linenos {
     padding-right: 12px !important;
     color: #94a3b8;
@@ -93,25 +78,103 @@ pre {
     user-select: none;
 }
 
-/* ---------- 5. MyST 提示框样式微调 ---------- */
-/* 让 note/warning 提示框更柔和 */
+/* ---------- 5. MyST admonition提示框 ---------- */
 .admonition {
     border-radius: 6px;
     box-shadow: none;
 }
-
 .admonition.note {
     border-left: 4px solid #3b82f6;
 }
-
 .admonition.warning {
     border-left: 4px solid #f59e0b;
 }
-
 .admonition.tip {
     border-left: 4px solid #10b981;
 }
-
 .admonition.danger {
     border-left: 4px solid #ef4444;
 }
+
+/* 三级标题（###）：基础层级 */
+h3 {
+    margin-top: 1.5em;
+    padding-left: 0;
+    border-left: none;
+}
+
+/* 四级标题（####）：缩进 + 主题色竖线 */
+h4 {
+    margin-top: 1.2em;
+    padding-left: 16px;
+    border-left: 3px solid #42b983;
+}
+
+/* 五级标题（#####）：双倍缩进 + 浅色系竖线 */
+h5 {
+    margin-top: 1em;
+    padding-left: 32px;
+    border-left: 2px solid #95d5b2;
+}
+
+/* 六级标题（######）：三倍缩进 */
+h6 {
+    margin-top: 0.8em;
+    padding-left: 48px;
+    border-left: 2px solid #d8f3dc;
+}
+
+
+table td, table th {
+    padding: 16px 20px !important;
+    line-height: 1.8;
+    vertical-align: top;
+}
+
+/* 针对 list-table 生成的表格：整体居中 + 内容居中 */
+table.docutils.colwidths-given {
+    /* 表格整体在页面中水平居中 */
+    margin-left: auto !important;
+    margin-right: auto !important;
+    /* 可选：限制表格最大宽度，避免太宽 */
+    max-width: 90%;
+}
+
+/* 表头和单元格全部居中 */
+table.docutils.colwidths-given th,
+table.docutils.colwidths-given td {
+    text-align: center !important;
+    vertical-align: middle;
+}
+
+
+
+/* ============================================
+   🎮 八方旅人
+    * 紫色宝箱：紫水晶高亮 */
+.chest-purple {
+    color: #9b59b6;
+    font-weight: 500;
+}
+
+/* 金色宝箱：黄金色高亮 */
+.chest-gold {
+    color: #d4af37;
+    font-weight: 500;
+}
+
+/* 银色宝箱：银灰色 */
+.chest-silver {
+    color: #7f8c8d;
+}
+
+/* 图标间距 */
+.chest-icon {
+    margin-right: 2px;
+}
+/* ============================================
+   ✨ 未来新增业务模块写在这里（文件尾部）
+   示例：
+   ### 模块：xxx功能
+   用途：xxx文档使用
+   ============================================ */

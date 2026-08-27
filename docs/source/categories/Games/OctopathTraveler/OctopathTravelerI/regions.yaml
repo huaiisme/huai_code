@@ -1,0 +1,18 @@
+regions:
+  - name: "Coastlands"
+    level: 3
+    areas:
+      - name: "Rippletide"
+        map: "Rippletide.png"
+        map_width: 320
+        region_full: "寇斯特兰多地区"
+        character: "Tressa"
+        chests:
+          purple: 1              # 1个，未完成
+          gold: [3, true]        # 3个，已完成
+          silver: [5, false]     # 5个，未完成
+        items:
+          - "生锈的短剑"                  # 未完成
+          - ["冒险家的藏宝图", true]       # 已完成
+          - "幸运铜护符"                  # 未完成
+          - ["港口商店折扣券", false]     # 未完成
