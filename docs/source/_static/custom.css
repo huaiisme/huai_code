@@ -54,16 +54,24 @@ table.docutils {
     width: 100%;
     margin: 16px 0;
 }
-table.docutils th,
+/* table.docutils th,
 table.docutils td {
     border: 1px solid #e5e7eb;
     padding: 8px 12px;
-    text-align: left;
-}
+    text-align: center;
+} */
 table.docutils th {
     background: #f8fafc;
     font-weight: 600;
 }
+
+/* 如果只想让你的区域表格居中，不影响其他表格，用这个类 */
+.rst-content table.area-table th,
+.rst-content table.area-table td {
+    text-align: center !important;
+    vertical-align: middle;
+}
+
 
 /* ---------- 4. 代码块组件 ---------- */
 pre {
@@ -123,31 +131,6 @@ h6 {
     padding-left: 48px;
     border-left: 2px solid #d8f3dc;
 }
-
-
-table td, table th {
-    padding: 16px 20px !important;
-    line-height: 1.8;
-    vertical-align: top;
-}
-
-/* 针对 list-table 生成的表格：整体居中 + 内容居中 */
-table.docutils.colwidths-given {
-    /* 表格整体在页面中水平居中 */
-    margin-left: auto !important;
-    margin-right: auto !important;
-    /* 可选：限制表格最大宽度，避免太宽 */
-    max-width: 90%;
-}
-
-/* 表头和单元格全部居中 */
-table.docutils.colwidths-given th,
-table.docutils.colwidths-given td {
-    text-align: center !important;
-    vertical-align: middle;
-}
-
-
 
 /* ============================================
    🎮 八方旅人

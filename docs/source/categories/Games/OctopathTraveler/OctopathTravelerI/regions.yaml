@@ -5,14 +5,96 @@ regions:
       - name: "Rippletide"
         map: "Rippletide.png"
         map_width: 320
-        region_full: "寇斯特兰多地区"
-        character: "Tressa"
+        character: "Tressa"  # 脚本已自动忽略该字段
         chests:
-          purple: 1              # 1个，未完成
-          gold: [3, true]        # 3个，已完成
-          silver: [5, false]     # 5个，未完成
+          purple: 1                  # 1个，默认未完成
+          gold: [3, checked]         # 3个，已完成
+          silver: [5, checked]     # 5个，未完成
         items:
-          - "生锈的短剑"                  # 未完成
-          - ["冒险家的藏宝图", true]       # 已完成
-          - "幸运铜护符"                  # 未完成
-          - ["港口商店折扣券", false]     # 未完成
+          - "生锈的短剑"             # 默认未完成
+          - ["冒险家的藏宝图", checked]    # 已完成
+          - "幸运铜护符"             # 未完成
+          - ["港口商店折扣券", unchecked]  # 未完成
+
+      - name: "Path to the Caves of Maiya"
+        map: "Path to the Caves of Maiya.png"
+        map_width: 320
+        character: "Tressa"  # 脚本已自动忽略该字段
+        chests:
+          purple: 1                  # 1个，默认未完成
+          gold: [3, checked]         # 3个，已完成
+          silver: [5, checked]     # 5个，未完成
+        items:
+          - "生锈的短剑"             # 默认未完成
+          - ["冒险家的藏宝图", checked]    # 已完成
+          - "幸运铜护符"             # 未完成
+          - ["港口商店折扣券", unchecked]  # 未完成
+        monsters:
+          - ["behemoth", checked]
+        vocab:
+          - ["brim with treasures", "财宝遍地"]
+          - ["Leave it to me!", "包在我身上"]
+          - ["give a wide berth to sth/sb", "敬而远之，保持距离"]
+          # 完整写法：单词 + 词性 + 释义 + 场景
+          - {word: "full-fledged,/ˌfʊl ˈfledʒd/", pos: "n.", meaning: "羽翼丰满", scene: "NPC对话"}
+          - {word: "harbor", pos: "n.", meaning: "港口", scene: "地图提示"}
+        sentences:
+          # 简写：[原句, 译文]
+          - ["Welcome to Rippletide, the busiest harbor on the coast.", "欢迎来到涟漪湾，海岸线上最繁忙的港口。"]
+          # 完整写法：原句 + 译文 + 场景/说话人
+          - sentence: "I haven't seen that face around here before. Traveler, are you?"
+            translation: "我没在这儿见过你。旅行者，你是新来的？"
+            scene: "港口NPC对话"
+          - sentence: "The caves to the east have been crawling with monsters lately. Stay clear if you value your life."
+            translation: "东边的洞穴最近到处都是怪物，想活命就别靠近。"
+            scene: "村长警告"
+
+
+
+# regions:
+#   - name: "Coastlands"
+#     level: 3
+#     areas:
+#       - name: "Rippletide"
+#         map: "Rippletide.png"
+#         map_width: 320
+#         region_full: "Coastlands"
+#         # character: "Tressa"
+#         chests:
+#           # purple: [0, true]              # 
+#           gold: [0, false]        # 
+#           silver: [3, false]     #
+#         items:
+#           - "生锈的短剑"       
+#         vocab:
+#           # 简写：[单词, 释义]
+#           - ["brim with treasures", "财宝遍地"]
+#           - ["Leave it to me!", "包在我身上"]
+#           - ["give a wide berth to sth/sb", "敬而远之，保持距离"]
+#           - ["", "敬而远之，保持距离"]
+#           # 完整写法：单词 + 词性 + 释义 + 场景
+#           - {word: "full-fledged,/ˌfʊl ˈfledʒd/", pos: "n.", meaning: "羽翼丰满", scene: "NPC对话"}
+#           - {word: "harbor", pos: "n.", meaning: "港口", scene: "地图提示"}
+#         sentences:
+#           # 简写：[原句, 译文]
+#           - ["Welcome to Rippletide, the busiest harbor on the coast.", "欢迎来到涟漪湾，海岸线上最繁忙的港口。"]
+#           # 完整写法：原句 + 译文 + 场景/说话人
+#           - sentence: "I haven't seen that face around here before. Traveler, are you?"
+#             translation: "我没在这儿见过你。旅行者，你是新来的？"
+#             scene: "港口NPC对话"
+#           - sentence: "The caves to the east have been crawling with monsters lately. Stay clear if you value your life."
+#             translation: "东边的洞穴最近到处都是怪物，想活命就别靠近。"
+#             scene: "村长警告"
+
+
+#       - name: "Path to the Caves of Maiya"
+#         map: "Path_to_the_Caves_of_Maiya.png"
+#         map_width: 320
+#         region_full: "Coastlands"
+#         # character: "Tressa"
+#         chests:
+#           purple: 0              # 1个，未完成
+#           gold: [0, false]        # 3个，已完成
+#           silver: [1, false]     # 5个，未完成
+#         items:
+#           - "生锈的短剑"                 

@@ -12,3 +12,4 @@ sphinx-quickstart docs
 
 ## 建立
 sphinx-autobuild docs/source docs/build/html
+sphinx-autobuild source build/html

@@ -22,3 +22,6 @@ OctopathTraveler/OctopathTravelerII/index
 :maxdepth: 1
 OctopathTraveler/OctopathTraveler0/index
 ```
+406031496@qq.com
+2776732446@qq.com
+2488232340@qq.com
