@@ -36,10 +36,8 @@ _ARPABET_TO_IPA = {
 
 # ========== 工具：离线生成音标 ==========
 def _arpabet_to_ipa(arpabet_list):
-    """把CMU的ARPABET音素列表转为IPA音标，加重音标记"""
     ipa = []
-    for i, phoneme in enumerate(arpabet_list):
-        # 提取重音数字 0=轻音 1=重音 2=次重音
+    for phoneme in arpabet_list:
         stress = re.search(r'\d$', phoneme)
         if stress:
             stress_val = int(stress.group())
@@ -49,7 +47,6 @@ def _arpabet_to_ipa(arpabet_list):
 
         ipa_char = _ARPABET_TO_IPA.get(phoneme, phoneme.lower())
 
-        # 加重音符号
         if stress_val == 1:
             ipa.append('ˈ')
         elif stress_val == 2:
@@ -60,22 +57,18 @@ def _arpabet_to_ipa(arpabet_list):
 
 
 def get_phonetic(word: str) -> str:
-    """离线获取单词音标，查不到返回空字符串"""
     if not word or not word.strip():
         return ""
     word = word.strip().lower()
     if word in _phonetic_cache:
         return _phonetic_cache[word]
 
-    # 只取第一个单词
     first_word = word.split()[0] if " " in word else word
-    # 只保留字母和连字符
     first_word = "".join(c for c in first_word if c.isalpha() or c == "-")
     if not first_word or first_word not in _cmu_dict:
         _phonetic_cache[word] = ""
         return ""
 
-    # 取第一个发音
     phonetic = _arpabet_to_ipa(_cmu_dict[first_word][0])
     _phonetic_cache[word] = phonetic
     return phonetic
@@ -181,46 +174,52 @@ def generate_area_table(area, region_name):
             )
         monster_block = "<br>".join(monster_lines)
 
-    # 4. 生词词汇（离线音标 + 离线发音按钮）
+    # 4. 生词词汇（彻底修复引号嵌套 + 标签结构）
     vocab_block = ""
     if "vocab" in area and area["vocab"]:
-        vocab_rows = []
+        vocab_html = ['<table style="width: 100%; border-collapse: collapse; margin-top: 8px;">']
+        # 表头
+        vocab_html.append(
+            '<tr>'
+            '<th style="width: 55%; text-align: left; background-color: #f8f9fa; padding: 8px 10px; border-bottom: 1px solid #e9ecef; font-weight: 600;">单词</th>'
+            '<th style="text-align: left; background-color: #f8f9fa; padding: 8px 10px; border-bottom: 1px solid #e9ecef; font-weight: 600;">释义</th>'
+            '</tr>'
+        )
+        # 单词行
         for entry in area["vocab"]:
             v = parse_vocab_entry(entry)
             phonetic = get_phonetic(v["word"])
             word_text = v["word"]
 
-            left_parts = []
+            # 左列：发音按钮 + 单词 + 音标 + 词性
+            left = ""
             if word_text:
-                left_parts.append(
-                    f'<span onclick="playWord(\'{word_text}\')" style="cursor: pointer; margin-right: 6px;" title="发音">🔊</span>'
-                )
-                left_parts.append(f'<strong>{word_text}</strong>')
+                # 关键修复：属性外层双引号，函数参数单引号，绝对不冲突
+                safe_w = word_text.replace("'", "\\'")
+                left += f'<span onclick="playWord(\'{safe_w}\')" style="cursor: pointer; margin-right: 6px;" title="发音">🔊</span>'
+                left += f'<strong>{word_text}</strong>'
             if phonetic:
-                left_parts.append(f'<span style="color: #666; font-size: 0.9em; margin-left: 8px;">{phonetic}</span>')
+                left += f'<span style="color: #666; font-size: 0.9em; margin-left: 8px;">{phonetic}</span>'
             if v["pos"]:
-                left_parts.append(f'<span style="color: #666; font-size: 0.9em; margin-left: 6px;">{v["pos"]}</span>')
-            left_cell = "".join(left_parts)
+                left += f'<span style="color: #666; font-size: 0.9em; margin-left: 6px;">{v["pos"]}</span>'
 
-            right_parts = []
+            # 右列：释义 + 场景
+            right = ""
             if v["meaning"]:
-                right_parts.append(v["meaning"])
+                right += v["meaning"]
             if v["scene"]:
-                right_parts.append(f'<span style="color: #888; font-size: 0.9em; margin-left: 8px;">（{v["scene"]}）</span>')
-            right_cell = "".join(right_parts)
+                right += f'<span style="color: #888; font-size: 0.9em; margin-left: 8px;">（{v["scene"]}）</span>'
 
-            vocab_rows.append(
-                f'  <tr>\n    <td style="padding: 6px 10px; border-bottom: 1px solid #f0f2f5;">{left_cell}</td>\n    <td style="padding: 6px 10px; border-bottom: 1px solid #f0f2f5;">{right_cell}</td>\n  </tr>'
+            # 严格闭合的一行
+            vocab_html.append(
+                f'<tr>'
+                f'<td style="padding: 6px 10px; border-bottom: 1px solid #f0f2f5;">{left}</td>'
+                f'<td style="padding: 6px 10px; border-bottom: 1px solid #f0f2f5;">{right}</td>'
+                f'</tr>'
             )
 
-        vocab_table = f'''<table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
-  <tr>
-    <th style="width: 55%; text-align: left; background-color: #f8f9fa; padding: 8px 10px; border-bottom: 1px solid #e9ecef; font-weight: 600;">单词</th>
-    <th style="text-align: left; background-color: #f8f9fa; padding: 8px 10px; border-bottom: 1px solid #e9ecef; font-weight: 600;">释义</th>
-  </tr>
-{"".join(vocab_rows)}
-</table>'''
-        vocab_block = vocab_table
+        vocab_html.append('</table>')
+        vocab_block = "".join(vocab_html)
 
     # 5. 精选句子
     sentence_block = ""
@@ -238,7 +237,7 @@ def generate_area_table(area, region_name):
             sentence_items.append(f'<div style="margin-bottom: 4px;">{"".join(parts)}</div>')
         sentence_block = "".join(sentence_items)
 
-    # 6. 拼接详情 + 离线发音JS（浏览器本地合成，无需联网）
+    # 6. 拼接详情 + 发音JS
     detail_parts = [f"<strong>宝箱完成情况</strong><br>{chest_block}"]
     if item_block:
         detail_parts.append(f"<strong>未获取道具</strong><br>{item_block}")

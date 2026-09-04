@@ -1,2 +1,0 @@
-# OctopathTraveler II
-

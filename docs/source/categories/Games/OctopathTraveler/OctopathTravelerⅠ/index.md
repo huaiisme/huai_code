@@ -1,4 +1,4 @@
-# OctopathTraveler I
+# OctopathTraveler Ⅰ
 
 按照游历顺序
 

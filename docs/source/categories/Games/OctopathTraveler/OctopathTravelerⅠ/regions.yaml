@@ -1,0 +1,67 @@
+regions:
+  - name: "Coastlands"
+    level: 3
+    areas:
+      - name: "Rippletide"
+        map: "Rippletide.png"
+        map_width: 320
+        chests:
+          purple: 0                  # 1个，默认未完成
+          gold: [0, checked]         # 3个，已完成
+          silver: [0, checked]     # 5个，未完成
+        items:
+          - "生锈的短剑"             # 默认未完成
+          - ["冒险家的藏宝图", checked]    # 已完成
+          - "幸运铜护符"             # 未完成
+          - ["港口商店折扣券", unchecked]  # 未完成
+        monsters:
+          - ["behemoth", checked]
+        vocab:
+          - ["dreary", "破落"]
+          - ["neat", "整洁"]
+          - ["cargo", 船运货物]
+          - ["peek", 瞥一眼]
+          - ["Busy as a bream", "忙得像条鲷鱼"]
+          - [monument, 纪念碑] 
+
+      - name: "Path to the Caves of Maiya"
+        map: "Path to the Caves of Maiya.png"
+        map_width: 320
+        chests:
+          purple: 0                  # 
+          gold: [0, checked]         #
+          silver: [4, checked]     #
+        items:
+          - "生锈的短剑"             # 默认未完成
+        monsters:
+          - ["behemoth", checked]
+        vocab:
+          - ["brim with treasures", "财宝遍地"]
+          - [vulnerable, 弱点]
+          - [landlubbers, 陆地上笨手笨脚的人（指这群旱鸭子）]
+          # 完整写法：单词 + 词性 + 释义 + 场景
+          - {word: "full-fledged,/ˌfʊl ˈfledʒd/", pos: "n.", meaning: "羽翼丰满", scene: "NPC对话"}
+          - {word: "harbor", pos: "n.", meaning: "港口", scene: "地图提示"}
+        sentences:
+          # 简写：[原句, 译文]
+          - ["Welcome to Rippletide, the busiest harbor on the coast.", "欢迎来到涟漪湾，海岸线上最繁忙的港口。"]
+          # 完整写法：原句 + 译文 + 场景/说话人
+          - sentence: "I haven't seen that face around here before. Traveler, are you?"
+            translation: "我没在这儿见过你。旅行者，你是新来的？"
+            scene: "港口NPC对话"
+          - sentence: "The caves to the east have been crawling with monsters lately. Stay clear if you value your life."
+            translation: "东边的洞穴最近到处都是怪物，想活命就别靠近。"
+            scene: "村长警告"
+
+      - name: "Caves of Maiya"
+        map: "Caves of Maiya.png"
+        map_width: 320
+        chests:
+          purple: 0                  # 
+          gold: [2, checked]         # [1, checked] 
+          silver: [3, checked]     #
+        items:
+        monsters:
+        vocab:
+        sentences:
+          # 简写：[原句, 译文]
