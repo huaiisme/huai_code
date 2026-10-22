@@ -5,3 +5,11 @@ build/
 doctrees/
 .doctrees/
 .sphinx/
+*.mp4
+*.png
+*.xacro
+*.pyc
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
