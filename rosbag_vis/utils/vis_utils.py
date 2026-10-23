@@ -82,19 +82,21 @@ def corner2boxes_3d(center_x, center_y, center_z, length, width, height, yaw):
     corners_3d[:, 2] += center_z - height/2
     return corners_3d
 
-
-def draw_3d_box(ax, corners_3d, color='r', linestyle='-', linewidth=1.5):
-    """在3D图上画立方体框（12条边）"""
+def draw_3d_box(ax, corners_3d, color='r', linestyle='-', linewidth=1.0, alpha=0.4):
+    """3D包围盒线框，保持原始纯线框样式，仅降低透明度"""
     edges = [
-        [0, 1], [1, 2], [2, 3], [3, 0],  # 底面
-        [4, 5], [5, 6], [6, 7], [7, 4],  # 顶面
-        [0, 4], [1, 5], [2, 6], [3, 7],  # 竖线
+        [0, 1], [1, 2], [2, 3], [3, 0],
+        [4, 5], [5, 6], [6, 7], [7, 4],
+        [0, 4], [1, 5], [2, 6], [3, 7],
     ]
+
     for i, j in edges:
         ax.plot([corners_3d[i, 0], corners_3d[j, 0]],
                 [corners_3d[i, 1], corners_3d[j, 1]],
                 [corners_3d[i, 2], corners_3d[j, 2]],
-                color=color, linestyle=linestyle, linewidth=linewidth)
+                color=color, linestyle=linestyle,
+                linewidth=linewidth, alpha=alpha)
+
 
 
 def draw_3d_frame(pts_rel_list, car_x, car_y, yaw,
