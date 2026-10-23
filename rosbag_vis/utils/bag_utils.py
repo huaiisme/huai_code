@@ -4,6 +4,71 @@ import sensor_msgs.point_cloud2 as pc2
 import os
 import json
 import csv
+import pickle
+import hashlib
+
+
+def get_cache_path(bag_path):
+    """缓存文件放在 bag 所在的同目录下
+    路径：{bag所在目录}/.{bag文件名}_cache.pkl
+    """
+    bag_abs = os.path.abspath(bag_path)
+    bag_dir = os.path.dirname(bag_abs)
+    bag_name = os.path.basename(bag_abs).replace(".bag", "")
+    # 隐藏文件形式放在bag同目录
+    return os.path.join(bag_dir, f".{bag_name}_cache.pkl")
+
+
+def load_lidar_frames_cached(bag_path, lidar_topic):
+    """带缓存的雷达读取：缓存和bag同目录"""
+    cache_file = get_cache_path(bag_path)
+    
+    if os.path.exists(cache_file):
+        with open(cache_file, 'rb') as f:
+            all_cache = pickle.load(f)
+        if lidar_topic in all_cache:
+            print(f"  ✅ 从缓存加载 {lidar_topic}")
+            return all_cache[lidar_topic]
+    
+    print(f"  ⏳ 从bag读取 {lidar_topic}")
+    frames = load_lidar_frames(bag_path, lidar_topic)
+    
+    # 写入缓存
+    all_cache = {}
+    if os.path.exists(cache_file):
+        with open(cache_file, 'rb') as f:
+            all_cache = pickle.load(f)
+    all_cache[lidar_topic] = frames
+    with open(cache_file, 'wb') as f:
+        pickle.dump(all_cache, f)
+    
+    return frames
+
+
+def load_odom_list_cached(bag_path, odom_topic):
+    """带缓存的odom读取：缓存和bag同目录"""
+    cache_file = get_cache_path(bag_path)
+    
+    if os.path.exists(cache_file):
+        with open(cache_file, 'rb') as f:
+            all_cache = pickle.load(f)
+        if odom_topic in all_cache:
+            print(f"  ✅ 从缓存加载 {odom_topic}")
+            return all_cache[odom_topic]
+    
+    print(f"  ⏳ 从bag读取 {odom_topic}")
+    odom_list = load_odom_list(bag_path, odom_topic)
+    
+    all_cache = {}
+    if os.path.exists(cache_file):
+        with open(cache_file, 'rb') as f:
+            all_cache = pickle.load(f)
+    all_cache[odom_topic] = odom_list
+    with open(cache_file, 'wb') as f:
+        pickle.dump(all_cache, f)
+    
+    return odom_list
+
 
 def load_odom_list(bag_path, odom_topic):
     """读取bag里所有odom消息，时间戳转成13位毫秒"""
@@ -115,3 +180,28 @@ def load_pred_csv(pred_csv_path):
     # 转成列表并按时间排序
     pred_list = sorted(pred_dict.values(), key=lambda x: x["t_ms"])
     return pred_list
+
+def find_nearest_frame(frames, target_t_ms):
+    """从帧列表中查找时间最接近的帧
+    Args:
+        frames: 帧列表，每帧必须包含 t_ms 字段
+        target_t_ms: 目标时间戳（毫秒）
+    Returns:
+        nearest_frame: 最近的帧数据
+        dt_ms: 时间差（毫秒）
+    """
+    if len(frames) == 0:
+        return None, 1e18
+    
+    best_idx = 0
+    best_dt = abs(frames[0]["t_ms"] - target_t_ms)
+    
+    for i in range(1, len(frames)):
+        dt = abs(frames[i]["t_ms"] - target_t_ms)
+        if dt < best_dt:
+            best_dt = dt
+            best_idx = i
+    
+    return frames[best_idx], best_dt
+
+

@@ -9,7 +9,7 @@ from utils.tf_utils import (
 )
 from utils.bag_utils import (
     load_odom_list, load_lidar_frames,
-    load_gt_json_dir, load_pred_csv, find_nearest_by_time
+    load_gt_json_dir, load_pred_csv, find_nearest_by_time, find_nearest_frame
 )
 from utils.vis_utils import draw_bev_frame
 
@@ -120,12 +120,14 @@ def main():
             if abs(nearest_pred["t_ms"] - t_ms) <= PRED_HOLD_TIME_MS:
                 pred_item = nearest_pred
 
-        # 点云变换
+        # 点云变换（按时间戳匹配每路雷达）
+        target_t_ms = main_frames[idx]["t_ms"]
         pts_rel_list = []
         for cfg in LIDAR_CFG_LIST:
-            if idx >= len(lidar_data[cfg["topic"]]):
+            frame, dt_ms = find_nearest_frame(lidar_data[cfg["topic"]], target_t_ms)
+            if frame is None or dt_ms > 50:  # 时间差超过50ms认为不同步，跳过
                 continue
-            pts_base = transform_points(lidar_data[cfg["topic"]][idx]["pts"], cfg["T_lidar"])
+            pts_base = transform_points(frame["pts"], cfg["T_lidar"])
             pts_world = transform_points(pts_base, odom["T"])
             pts_rel = world_to_ego_view(pts_world, car_x, car_y, car_yaw)
             pts_rel_list.append(pts_rel)

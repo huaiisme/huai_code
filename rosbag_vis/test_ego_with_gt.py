@@ -3,11 +3,11 @@ import imageio
 from tqdm import tqdm
 
 from utils.tf_utils import create_tf_matrix, transform_points, gt_quat_to_yaw
-from utils.bag_utils import load_lidar_frames, load_gt_json_dir, find_nearest_by_time
+from utils.bag_utils import load_lidar_frames, load_gt_json_dir, find_nearest_by_time, find_nearest_frame
 from utils.vis_utils import draw_bev_frame
 
 # ===================== 配置区 =====================
-BAG_PATH = "/mnt/g/Gdisk_data1/eval_0609before/record_2026-06-04-10-19-07.bag"
+BAG_PATH = "/mnt/g/Gdisk_data1/eval_260609before/record_2026-06-04-10-19-07.bag"
 GT_LABEL_SIMPLE_PATH = "/home/huai/huai_work/data/gt_label_simple/record_2026-06-04-10-19-07"
 
 LIDAR_CFG_LIST = [
@@ -20,6 +20,8 @@ LIDAR_CFG_LIST = [
 VIEW_RANGE = 100.0
 POINT_COLOR = '#4A0072'
 GT_HOLD_TIME_MS = 100
+FRAME_MATCH_THRESHOLD_MS = 50  # 雷达帧时间匹配阈值
+
 OUTPUT_DIR = "./ego_frames"
 VIDEO_PATH = "./ego_lidar_bev.mp4"
 FPS = 10
@@ -71,15 +73,16 @@ def main():
             if abs(nearest_gt["t_ms"] - t_ms) <= GT_HOLD_TIME_MS:
                 gt_item = nearest_gt
 
-        # 点云变换：雷达 → base_link
+        # 点云变换：雷达 → base_link（按时间戳匹配每路雷达）
         pts_rel_list = []
         for cfg in LIDAR_CFG_LIST:
-            if idx >= len(lidar_data[cfg["topic"]]):
+            frame, dt_ms = find_nearest_frame(lidar_data[cfg["topic"]], t_ms)
+            if frame is None or dt_ms > FRAME_MATCH_THRESHOLD_MS:
                 continue
-            pts_base = transform_points(lidar_data[cfg["topic"]][idx]["pts"], cfg["T_lidar"])
+            pts_base = transform_points(frame["pts"], cfg["T_lidar"])
             pts_rel_list.append(pts_base)
 
-        # GT处理（自车版不需要world变换）
+        # GT处理
         gt_data_view = process_gt_ego(gt_item["data"]) if gt_item else None
 
         # 画图
@@ -101,7 +104,6 @@ def main():
     for img_path in tqdm(image_paths, desc="合成视频"):
         writer.append_data(imageio.imread(img_path))
     writer.close()
-
     print(f"🎉 完成: {VIDEO_PATH}")
 
 
