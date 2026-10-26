@@ -1,33 +1,26 @@
-"""三视角融合：BEV + 3D + 右侧三相机面板，逐帧渲染并合成视频。
+"""三视角融合批量渲染：BEV + 3D + 右侧三相机面板 → 每 bag 一个 mp4。
+
+调试期：GT_ROOT/PRED_ROOT 指向 *_simple（只跑有 GT 的 2 个示例 bag）。
+跑通后：把 GT_ROOT/PRED_ROOT 切回 gt_label/pred，并按需打开第二个 BAG_ROOT。
 
 运行方式：进入本目录后执行 python 3view_fusion.py
 """
 import os
 
-import cv2
-import imageio
-import numpy as np
-from tqdm import tqdm
+from utils.tf import create_tf_matrix
+from tools.pipeline import discover_bags, run_one_bag
 
-from utils.geometry import (box_ego_to_world, box_world_to_ego_view,
-                            world_to_ego_view_3d)
-from utils.image import resize_to_height
-from utils.tf import (create_tf_matrix, get_yaw_from_matrix, gt_quat_to_yaw,
-                      transform_points)
-from tools.bag_reader.base import (build_gt_match_map, find_nearest_by_time,
-                                   find_nearest_frame, load_gt_json_dir,
-                                   load_odom_list_cached, load_pred_csv)
-from tools.bag_reader.camera import load_camera_frames_cached
-from tools.bag_reader.lidar import load_lidar_frames_cached
-from tools.vis.bev import render_bev
-from tools.vis.camera_panel import build_camera_panel
-from tools.vis.lidar_3d import render_3d
+# ===================== 根路径（调试期 → simple） =====================
+DATA_ROOT = "/home/huai/huai_work/data"
+BAG_ROOTS = [
+    # f"{DATA_ROOT}/eval_260609before",
+    # f"{DATA_ROOT}/eval_260610after",   # 第二批，需要时打开
+    f"{DATA_ROOT}/eval_260613after",
+]
+GT_ROOT = f"{DATA_ROOT}/gt_label"     # 调试期；正式切到 gt_label
+PRED_ROOT = f"{DATA_ROOT}/pred"       # 调试期；正式切到 pred
 
-# ===================== 配置 =====================
-BAG_PATH = "/home/huai/huai_work/data/eval_260609before/record_2026-06-04-10-20-43.bag"
 ODOM_TOPIC = "/gps/odom"
-GT_LABEL_SIMPLE_PATH = "/home/huai/huai_work/data/gt_label_simple/record_2026-06-04-10-20-43"
-PRED_CSV_PATH = "/home/huai/huai_work/data/pred_simple/record_2026-06-04-10-20-43.csv"
 
 CAMERA_TOPICS = {
     "front":       "/front_camera/cam000",
@@ -45,147 +38,78 @@ LIDAR_CFG_LIST = [
 # 可视化
 POINT_COLOR = "#48D1CC"
 VIEW_RANGE_BEV = 100.0
-VIEW_RANGE_X_FRONT = 50.0
-VIEW_RANGE_X_BACK = 20.0
-VIEW_RANGE_Y = 30.0
-VIEW_RANGE_Z_MIN = -2.0
-VIEW_RANGE_Z_MAX = 8.0
+VIEW_X_FRONT = 50.0
+VIEW_X_BACK = 20.0
+VIEW_Y = 30.0
+VIEW_Z_MIN = -2.0
+VIEW_Z_MAX = 8.0
 BOX_CENTER_MARGIN = (5.0, 5.0, 2.0)
 AXIS_ASPECT = (1, 1.5, 0.8)
-ELEV_ANGLE = 60.0
-AZIM_ANGLE = 180.0
+ELEV = 60.0
+AZIM = 180.0
 
 # 时间匹配阈值 (ms)
 GT_MAX_DIFF_MS = 150
 PRED_MAX_DIFF_MS = 150
-FRAME_MATCH_THRESHOLD_MS = 50
+FRAME_MATCH_MS = 50
 CAMERA_MAX_DIFF_MS = 100
 
 # 输出
 TOTAL_HEIGHT = 900
 CAM_RIGHT_WIDTH = 540
 CAM_GAP = 0
-OUTPUT_DIR = "./3view_fusion_frames"
-VIDEO_PATH = "./3view_fusion.mp4"
+OUTPUT_ROOT = "./batch_3view_out"
 FPS = 10
 
 
-# ===================== 框坐标变换 =====================
-def transform_gt_to_view(gt_data, odom_T, car_x, car_y, car_z, car_yaw):
-    """GT 框：自车系 → 世界系 → 自车视角（与点云同一条变换链）。"""
-    out = []
-    for obj in gt_data["objects"]:
-        ego_yaw = gt_quat_to_yaw(obj["rotation"])
-        tx, ty, tz = obj["translation"]
-        wx, wy, wz, wyaw = box_ego_to_world(tx, ty, tz, ego_yaw, odom_T)
-        vx, vy, vz, vyaw = box_world_to_ego_view(wx, wy, wz, wyaw,
-                                                 car_x, car_y, car_z, car_yaw)
-        out.append({"ID": obj["ID"], "category": obj["category"],
-                    "translation": [vx, vy, vz], "size": obj["size"], "yaw": vyaw})
-    return {"objects": out}
-
-
-def transform_pred_to_view(pred_data, car_x, car_y, car_z, car_yaw):
-    """Pred 框：世界系 → 自车视角。"""
-    out = []
-    for obj in pred_data["objects"]:
-        tx, ty, tz = obj["translation"]
-        vx, vy, vz, vyaw = box_world_to_ego_view(tx, ty, tz, obj["yaw"],
-                                                 car_x, car_y, car_z, car_yaw)
-        out.append({"track_id": obj["track_id"], "category": obj["category"],
-                    "translation": [vx, vy, vz], "size": obj["size"],
-                    "yaw": vyaw, "conf": obj["conf"]})
-    return {"objects": out}
-
-
-def _collect_points(lidar_data, cfg_list, t_ms, odom_T, car_x, car_y, car_z, car_yaw):
-    """雷达 → 自车 → 世界 → 自车视角，按时间戳融合多路点云。"""
-    pts_rel_list = []
-    for cfg in cfg_list:
-        frame, dt_ms = find_nearest_frame(lidar_data[cfg["topic"]], t_ms)
-        if frame is None or dt_ms > FRAME_MATCH_THRESHOLD_MS:
-            continue
-        pts_base = transform_points(frame["pts"], cfg["T_lidar"])
-        pts_world = transform_points(pts_base, odom_T)
-        pts_rel_list.append(world_to_ego_view_3d(pts_world, car_x, car_y, car_z, car_yaw))
-    return pts_rel_list
+def build_cfg():
+    """把外参一次性 bake 进 LIDAR_CFG_LIST（车固，不随 bag 变）。"""
+    for c in LIDAR_CFG_LIST:
+        c["T_lidar"] = create_tf_matrix(c["tf_xyz"], c["tf_rpy"])
+    return {
+        "ODOM_TOPIC": ODOM_TOPIC,
+        "CAMERA_TOPICS": CAMERA_TOPICS,
+        "LIDAR_CFG_LIST": LIDAR_CFG_LIST,
+        "POINT_COLOR": POINT_COLOR,
+        "VIEW_RANGE_BEV": VIEW_RANGE_BEV,
+        "VIEW_X_BACK": VIEW_X_BACK,
+        "VIEW_X_FRONT": VIEW_X_FRONT,
+        "VIEW_Y": VIEW_Y,
+        "VIEW_Z_MIN": VIEW_Z_MIN,
+        "VIEW_Z_MAX": VIEW_Z_MAX,
+        "BOX_CENTER_MARGIN": BOX_CENTER_MARGIN,
+        "AXIS_ASPECT": AXIS_ASPECT,
+        "ELEV": ELEV,
+        "AZIM": AZIM,
+        "GT_MAX_DIFF_MS": GT_MAX_DIFF_MS,
+        "PRED_MAX_DIFF_MS": PRED_MAX_DIFF_MS,
+        "FRAME_MATCH_MS": FRAME_MATCH_MS,
+        "CAMERA_MAX_DIFF_MS": CAMERA_MAX_DIFF_MS,
+        "TOTAL_HEIGHT": TOTAL_HEIGHT,
+        "CAM_RIGHT_WIDTH": CAM_RIGHT_WIDTH,
+        "CAM_GAP": CAM_GAP,
+        "OUTPUT_ROOT": OUTPUT_ROOT,
+        "FPS": FPS,
+    }
 
 
 def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    for f in os.listdir(OUTPUT_DIR):
-        if f.endswith(".png"):
-            os.remove(os.path.join(OUTPUT_DIR, f))
+    os.makedirs(OUTPUT_ROOT, exist_ok=True)
+    tasks = discover_bags(BAG_ROOTS, GT_ROOT, PRED_ROOT)
+    print(f"共 {len(tasks)} 个待处理 bag:")
+    for t in tasks:
+        print(f"  - {os.path.basename(t['bag_path'])}")
 
-    print("==== Step1: Loading odom ====")
-    odom_list = load_odom_list_cached(BAG_PATH, ODOM_TOPIC)
-    print(f"✅ {len(odom_list)} odom")
-
-    print("==== Step2: Loading lidar ====")
-    lidar_data = {}
-    for cfg in tqdm(LIDAR_CFG_LIST, desc="读取雷达"):
-        cfg["T_lidar"] = create_tf_matrix(cfg["tf_xyz"], cfg["tf_rpy"])
-        lidar_data[cfg["topic"]] = load_lidar_frames_cached(BAG_PATH, cfg["topic"])
-
-    print("==== Step3: Loading GT & Pred ====")
-    gt_list = load_gt_json_dir(GT_LABEL_SIMPLE_PATH)
-    pred_list = load_pred_csv(PRED_CSV_PATH)
-    print(f"✅ GT: {len(gt_list)}, Pred: {len(pred_list)}")
-
-    print("==== Step4: Loading cameras ====")
-    cam_data = {name: load_camera_frames_cached(BAG_PATH, topic)
-                for name, topic in CAMERA_TOPICS.items()}
-
-    main_frames = lidar_data[LIDAR_CFG_LIST[0]["topic"]]
-    gt_match_map = build_gt_match_map(main_frames, gt_list, GT_MAX_DIFF_MS)
-    print(f"✅ GT 匹配成功 {sum(g is not None for g in gt_match_map)} 帧")
-
-    print("==== Step5: Rendering fusion ====")
-    image_paths = []
-    for idx in tqdm(range(len(main_frames)), desc="渲染"):
-        t_ms = main_frames[idx]["t_ms"]
-        odom = find_nearest_by_time(odom_list, t_ms)
-        car_x, car_y, car_z = odom["T"][0, 3], odom["T"][1, 3], odom["T"][2, 3]
-        car_yaw = get_yaw_from_matrix(odom["T"])
-
-        gt_item = gt_match_map[idx]
-        pred_item = find_nearest_by_time(pred_list, t_ms) if pred_list else None
-        if pred_item and abs(pred_item["t_ms"] - t_ms) > PRED_MAX_DIFF_MS:
-            pred_item = None
-
-        pts_rel_list = _collect_points(lidar_data, LIDAR_CFG_LIST, t_ms,
-                                       odom["T"], car_x, car_y, car_z, car_yaw)
-        gt_view = transform_gt_to_view(gt_item["data"], odom["T"],
-                                      car_x, car_y, car_z, car_yaw) if gt_item else None
-        pred_view = transform_pred_to_view(pred_item, car_x, car_y, car_z, car_yaw) if pred_item else None
-
-        bev_img, _ = render_bev(pts_rel_list, gt_data=gt_view, pred_data=pred_view,
-                                view_range=VIEW_RANGE_BEV, point_color=POINT_COLOR,
-                                frame_idx=idx, t_ms=t_ms)
-        d3_img, _ = render_3d(pts_rel_list, gt_data=gt_view, pred_data=pred_view,
-                              view_x_back=VIEW_RANGE_X_BACK, view_x_front=VIEW_RANGE_X_FRONT,
-                              view_y=VIEW_RANGE_Y, view_z_min=VIEW_RANGE_Z_MIN,
-                              view_z_max=VIEW_RANGE_Z_MAX, point_color=POINT_COLOR,
-                              box_center_margin=BOX_CENTER_MARGIN, axis_aspect=AXIS_ASPECT,
-                              elev=ELEV_ANGLE, azim=AZIM_ANGLE, frame_idx=idx, t_ms=t_ms)
-        cam_panel = build_camera_panel(cam_data, t_ms, CAMERA_MAX_DIFF_MS,
-                                       CAM_RIGHT_WIDTH, CAM_GAP)
-
-        fusion = np.hstack([
-            resize_to_height(bev_img, TOTAL_HEIGHT),
-            resize_to_height(d3_img, TOTAL_HEIGHT),
-            resize_to_height(cam_panel, TOTAL_HEIGHT),
-        ])
-        img_path = os.path.join(OUTPUT_DIR, f"frame_{idx:04d}.png")
-        cv2.imwrite(img_path, fusion)
-        image_paths.append(img_path)
-
-    print("==== Step6: Writing video ====")
-    writer = imageio.get_writer(VIDEO_PATH, fps=FPS)
-    for img_path in tqdm(image_paths, desc="合成视频"):
-        writer.append_data(imageio.imread(img_path))
-    writer.close()
-    print(f"🎉 完成: {VIDEO_PATH}")
+    cfg = build_cfg()
+    ok, fail = 0, 0
+    for t in tasks:
+        try:
+            run_one_bag(t["bag_path"], t["gt_dir"], t["pred_csv"], cfg)
+            ok += 1
+        except Exception as e:
+            fail += 1
+            print(f"❌ {os.path.basename(t['bag_path'])} 失败: {e}")
+    print(f"\n==== 批量完成: 成功 {ok}, 失败 {fail} ====")
 
 
 if __name__ == "__main__":
