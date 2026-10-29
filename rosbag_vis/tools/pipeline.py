@@ -180,12 +180,13 @@ def run_one_bag(bag_path, gt_dir, pred_csv, cfg):
                               elev=cfg["ELEV"], azim=cfg["AZIM"],
                               frame_idx=idx, t_ms=t_ms)
         cam_panel = build_camera_panel(cam_data, t_ms, cfg["CAMERA_MAX_DIFF_MS"],
-                                       cfg["CAM_RIGHT_WIDTH"], cfg["CAM_GAP"])
+                                       cfg["CAM_RIGHT_WIDTH"], cfg["TOTAL_HEIGHT"],
+                                       cfg["CAM_GAP"])
 
         fusion = np.hstack([
             resize_to_height(bev_img, cfg["TOTAL_HEIGHT"]),
             resize_to_height(d3_img, cfg["TOTAL_HEIGHT"]),
-            resize_to_height(cam_panel, cfg["TOTAL_HEIGHT"]),
+            cam_panel,
         ])
         img_path = os.path.join(frames_dir, f"frame_{idx:04d}.png")
         cv2.imwrite(img_path, fusion)

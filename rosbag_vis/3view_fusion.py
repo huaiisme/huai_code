@@ -15,7 +15,7 @@ DATA_ROOT = "/home/huai/huai_work/data"
 BAG_ROOTS = [
     # f"{DATA_ROOT}/eval_260609before",
     # f"{DATA_ROOT}/eval_260610after",   # 第二批，需要时打开
-    f"{DATA_ROOT}/eval_260613after",
+    f"{DATA_ROOT}/eval_260613after"
 ]
 GT_ROOT = f"{DATA_ROOT}/gt_label"     # 调试期；正式切到 gt_label
 PRED_ROOT = f"{DATA_ROOT}/pred"       # 调试期；正式切到 pred
