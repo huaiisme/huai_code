@@ -41,6 +41,7 @@ myst_linkify_options = {
 
 # 全局开启图表、表格、代码块自动编号
 numfig = True
+# root_doc = "Index"
 
 # 修正后的编号格式（全部使用 %s 字符串占位符）
 numfig_format = {
