@@ -4,13 +4,13 @@
 ```{toctree}
 :numbered:
 :maxdepth: 2
-:caption: ROS环境
-docs/ros_env.md
+:caption: Ubuntu 20.04 ROS1 
+docs/env/ros_env.md
 ```
 
 ```{toctree}
 :numbered:
 :maxdepth: 2
-:caption: 初始化
-docs/ros_env2.md
+:caption: 相关内容
+docs/env/ros_env2.md
 ```

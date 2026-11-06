@@ -12,7 +12,10 @@ Project/BevFusion/index
 Project/FileTree/index
 ```
 
-
+```{toctree}
+:maxdepth: 1
+Project/MultiSensorPostFusion/index
+```
 
 
 
