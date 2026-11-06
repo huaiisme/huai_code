@@ -12,12 +12,7 @@
 ├── sweeps/        # 中间帧
 ├── maps/          # 地图文件
 └── v1.0-mini/     # 标注与标定文件（json）
-
-
-
-
-
-
+tar -zxvf v1.0-mini.tgz
 
 ```
 

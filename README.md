@@ -1,8 +1,13 @@
 # huai_code
 redo my proj and set the sphinx for main branch
 
-pip install sphinx sphinx-rtd-theme
+sphinx-autobuild source build/html
 
+sudo apt install python3-sphinx-autobuild
+
+python3 -m pip install sphinx sphinx-autobuild myst_parser sphinx-rtd-theme
+python3 -m pip install sphinx-copybutton sphinx-design linkify-it-py
+python3 -m pip install linkify-it-py
 
 # 改用 Python 离线库 `cmudict`
 pip install cmudict

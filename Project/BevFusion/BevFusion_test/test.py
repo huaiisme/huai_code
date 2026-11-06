@@ -11,7 +11,6 @@ POINT_RADIUS = 3
 MAX_DEPTH = 80.0
 # ============================
 
-
 def quaternion_to_rotation_matrix(q):
     """
     自研：四元数转3x3旋转矩阵
@@ -25,8 +24,6 @@ def quaternion_to_rotation_matrix(q):
         [2*x*z - 2*y*w,      2*y*z + 2*x*w,    1 - 2*x*x - 2*y*y]
     ], dtype=np.float32)
     return rot
-
-
 
 
 
