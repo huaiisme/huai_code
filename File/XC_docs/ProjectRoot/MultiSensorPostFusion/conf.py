@@ -24,7 +24,7 @@ exclude_patterns = ["_build"]
 numfig = True
 numfig_secnum_depth = 1
 numfig_format = {
-    "code-block": "CODE %s",
+    "code-block": "Code %s",
     "figure": "Fig. %s",
     "table": "Table %s",
 }
