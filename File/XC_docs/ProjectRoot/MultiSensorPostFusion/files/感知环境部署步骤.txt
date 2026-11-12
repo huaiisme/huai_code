@@ -1,0 +1,75 @@
+1、安装定位 gps-common 模块
+```
+sudo apt install  -y \
+                  ros-noetic-swri-nodelet \
+                  ros-noetic-swri-string-util \
+                  ros-noetic-swri-math-util \
+                  ros-noetic-swri-serial-util \
+                  ros-noetic-gps-common \
+                  ros-noetic-swri-roscpp
+                  
+2、msg软件包及Rviz插件
+```
+sudo apt-get install ros-noetic-jsk-recognition-msgs
+sudo apt-get install ros-noetic-jsk-rviz-plugins
+
+protobuf安装，解压后：
+cd protobuf-all-3.7.1
+./configure --prefix=/usr/local
+make -j$(nproc)  
+sudo make install
+sudo ldconfig
+
+
+3、安装配置cuda和tensorrt
+（1）配置cuda
+https://blog.csdn.net/weixin_47071532/article/details/135067104
+
+（2）配置cudnn
+
+见上一个链接
+
+（3）配置tensorrt
+
+https://zhuanlan.zhihu.com/p/392143346
+
+
+    sudo ln -s /usr/lib/libnvonnxparser.so /usr/lib/x86_64-linux-gnu/libnvonnxparser.so
+    
+
+4、opencv cuda（参考链接：https://blog.csdn.net/weixin_43934241/article/details/137408489）
+(1)将opencv-4.5.4.zip 解压到/mnt/ufs_data/driver/目录下
+ opencv_contrib-4.5.4.zip解压放在opencv-4.5.4文件夹内
+ cd opencv-4.5.4
+ mkdir build
+ cd build
+cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D WITH_CUDA=ON -D CUDA_ARCH_BIN="8.6" -D CUDA_ARCH_PTX="" -D WITH_CUBLAS=ON -D ENABLE_FAST_MATH=ON -D CUDA_FAST_MATH=ON -D ENABLE_SSE=ON -D ENABLE_SSE2=ON -D ENABLE_SSE3=ON -D ENABLE_SSSE3=ON -D ENABLE_SSE41=ON -D ENABLE_SSE42=ON -D ENABLE_POPCNT=ON -D ENABLE_AVX=ON -D ENABLE_AVX2=ON -D ENABLE_FMA3=ON -D WITH_LIBV4L=ON -D BUILD_PERF_TESTS=OFF -D BUILD_EXAMPLES=OFF -D WITH_QT=OFF -D WITH_OPENGL=ON -D BUILD_TIFF=ON -D OPENCV_EXTRA_MODULES_PATH=/home/winnie/driver/opencv-4.5.4/opencv_contrib-4.5.4/modules -D WITH_GLOG=ON ..
+	
+    
+make -j12
+sudo make install
+
+(2)如果中途报canberra-gtk-module错误，执行下述命令，未报错可忽略
+sudo apt-get install libcanberra-gtk-module
+
+(3)配置cv_bridge
+sudo gedit /opt/ros/noetic/share/cv_bridge/cmake/cv_bridgeConfig.cmake
+
+大概90行：
+#if(NOT "include;/usr/include/opencv4 " STREQUAL " ")
+if(NOT "include;/usr/local/include/opencv4 " STREQUAL " ")
+  set(cv_bridge_INCLUDE_DIRS "")
+  #set(_include_dirs "include;/usr/include/opencv4")
+  set(_include_dirs "include;/usr/local/include;/usr/local/include/opencv4;/usr/include")
+
+set(libraries "cv_bridge;/usr/local/lib/libopencv_calib3d.so.4.5.4;/usr/local/lib/libopencv_dnn.so.4.5.4;/usr/local/lib/libopencv_features2d.so.4.5.4;/usr/local/lib/libopencv_flann.so.4.5.4;/usr/local/lib/libopencv_highgui.so.4.5.4;/usr/local/lib/libopencv_ml.so.4.5.4;/usr/local/lib/libopencv_objdetect.so.4.5.4;/usr/local/lib/libopencv_photo.so.4.5.4;/usr/local/lib/libopencv_stitching.so.4.5.4;/usr/local/lib/libopencv_video.so.4.5.4;/usr/local/lib/libopencv_videoio.so.4.5.4;/usr/local/lib/libopencv_aruco.so.4.5.4;/usr/local/lib/libopencv_bgsegm.so.4.5.4;/usr/local/lib/libopencv_bioinspired.so.4.5.4;/usr/local/lib/libopencv_ccalib.so.4.5.4;/usr/local/lib/libopencv_datasets.so.4.5.4;/usr/local/lib/libopencv_dnn_objdetect.so.4.5.4;/usr/local/lib/libopencv_dnn_superres.so.4.5.4;/usr/local/lib/libopencv_dpm.so.4.5.4;/usr/local/lib/libopencv_face.so.4.5.4;/usr/local/lib/libopencv_freetype.so.4.5.4;/usr/local/lib/libopencv_fuzzy.so.4.5.4;/usr/local/lib/libopencv_hdf.so.4.5.4;/usr/local/lib/libopencv_hfs.so.4.5.4;/usr/local/lib/libopencv_img_hash.so.4.5.4;/usr/local/lib/libopencv_line_descriptor.so.4.5.4;/usr/local/lib/libopencv_optflow.so.4.5.4;/usr/local/lib/libopencv_phase_unwrapping.so.4.5.4;/usr/local/lib/libopencv_plot.so.4.5.4;/usr/local/lib/libopencv_quality.so.4.5.4;/usr/local/lib/libopencv_reg.so.4.5.4;/usr/local/lib/libopencv_rgbd.so.4.5.4;/usr/local/lib/libopencv_saliency.so.4.5.4;/usr/local/lib/libopencv_shape.so.4.5.4;/usr/local/lib/libopencv_stereo.so.4.5.4;/usr/local/lib/libopencv_structured_light.so.4.5.4;/usr/local/lib/libopencv_superres.so.4.5.4;/usr/local/lib/libopencv_surface_matching.so.4.5.4;/usr/local/lib/libopencv_text.so.4.5.4;/usr/local/lib/libopencv_tracking.so.4.5.4;/usr/local/lib/libopencv_videostab.so.4.5.4;/usr/local/lib/libopencv_viz.so.4.5.4;/usr/local/lib/libopencv_ximgproc.so.4.5.4;/usr/local/lib/libopencv_xobjdetect.so.4.5.4;/usr/local/lib/libopencv_xphoto.so.4.5.4;/usr/local/lib/libopencv_core.so.4.5.4;/usr/local/lib/libopencv_imgproc.so.4.5.4;/usr/local/lib/libopencv_imgcodecs.so.4.5.4")
+
+
+5 遇到的问题--需要配置wsl内存
+
+c++: fatal error: Killed signal terminated program cc1plus
+compilation terminated.
+make[2]: *** [debugging_toolset/CMakeFiles/lll_boundary.dir/build.make:63: debugging_toolset/CMakeFiles/lll_boundary.dir/src/function/lll_boundary.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:20318: debugging_toolset/CMakeFiles/lll_boundary.dir/all] Error 2
+c++: fatal error: Killed signal terminated program cc1plus
+
