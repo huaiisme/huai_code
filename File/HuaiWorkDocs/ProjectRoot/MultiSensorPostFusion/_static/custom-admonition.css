@@ -1,0 +1,35 @@
+/* purple：基于note，i图标 */
+.admonition.purple {
+  border-left: 0.2rem solid #9333ea !important;
+  background-color: #f5edff !important;
+}
+.admonition.purple > .admonition-title {
+  background-color: #9333ea !important;
+  color: #ffffff !important;
+}
+
+/* orange：基于warning，感叹号 */
+.admonition.orange {
+  border-left: 0.2rem solid #ea580c !important;
+  background-color: #fef1e6 !important;
+}
+.admonition.orange > .admonition-title {
+  background-color: #ea580c !important;
+  color: #ffffff !important;
+}
+
+/* black：基于note，i图标 */
+.admonition.black {
+  border-left: 0.2rem solid #222222 !important;
+  background-color: #f2f2f2 !important;
+}
+.admonition.black > .admonition-title {
+  background-color: #222222 !important;
+  color: #ffffff !important;
+}
+
+.mark-text {
+  background-color: #fff280;
+  padding: 0 0.25rem;
+}
+
